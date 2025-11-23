@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.vite
+.cache
+coverage
+.env
+.env.local
+.DS_Store
+*.log
+.vscode-test

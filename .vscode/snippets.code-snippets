@@ -1,0 +1,53 @@
+{
+  "React Functional Component": {
+    "prefix": "rfc",
+    "body": [
+      "import React from 'react'",
+      "",
+      "const ${1:ComponentName} = () => {",
+      "  return (",
+      "    <div>",
+      "      $0",
+      "    </div>",
+      "  )",
+      "}",
+      "",
+      "export default ${1:ComponentName}"
+    ],
+    "description": "Создать функциональный React компонент"
+  },
+  "React Functional Component with Props": {
+    "prefix": "rfcp",
+    "body": [
+      "import React from 'react'",
+      "",
+      "const ${1:ComponentName} = ({ $2 }) => {",
+      "  return (",
+      "    <div>",
+      "      $0",
+      "    </div>",
+      "  )",
+      "}",
+      "",
+      "export default ${1:ComponentName}"
+    ],
+    "description": "Создать функциональный React компонент с пропсами"
+  },
+  "useState Hook": {
+    "prefix": "ust",
+    "body": [
+      "const [${1:state}, set${1/(.*)/${1:/capitalize}/}] = useState($2)"
+    ],
+    "description": "Добавить useState хук"
+  },
+  "useEffect Hook": {
+    "prefix": "uef",
+    "body": ["useEffect(() => {", "  $0", "}, [])"],
+    "description": "Добавить useEffect хук"
+  },
+  "Console Log": {
+    "prefix": "clg",
+    "body": ["console.log('$1', $1)"],
+    "description": "Console.log с именем переменной"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "dev",
+      "label": "npm: dev",
+      "detail": "Запустить сервер разработки",
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "type": "npm",
+      "script": "build",
+      "label": "npm: build",
+      "detail": "Собрать проект для production",
+      "problemMatcher": []
+    },
+    {
+      "type": "npm",
+      "script": "preview",
+      "label": "npm: preview",
+      "detail": "Предпросмотр production сборки",
+      "problemMatcher": []
+    }
+  ]
+}
