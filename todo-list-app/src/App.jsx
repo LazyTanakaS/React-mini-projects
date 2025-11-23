@@ -101,13 +101,6 @@ function App() {
     return filtered
   }
 
-  const getPriorityColor = priority => {
-    if (priority === 'low') return 'green'
-    if (priority === 'medium') return 'orange'
-    if (priority === 'high') return 'red'
-    return 'gray'
-  }
-
   // ===== HANDLERS - TOGGLE =====
   const handleToggleComplete = id => {
     setTodos(
@@ -122,48 +115,55 @@ function App() {
   }
 
   return (
-    <div>
+    <div className="app-container">
       <h1>ToDo List</h1>
-      <p>Total tasks: {todos.length}</p>
-      <input
-        type="text"
-        value={task}
-        onChange={handleInputChange}
-        placeholder="Enter the text..."
-        onKeyDown={handleKeyDown}
-      />
+      <p className="task-count">Total tasks: {todos.length}</p>
 
-      <select value={priority} onChange={e => setPriority(e.target.value)}>
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </select>
+      <div className="input-section">
+        <input
+          type="text"
+          value={task}
+          onChange={handleInputChange}
+          placeholder="What needs to be done?"
+          onKeyDown={handleKeyDown}
+        />
 
-      <button onClick={handleAddTodo}>Add</button>
-      <button onClick={handleClearAll}>Clear ALL</button>
+        <select value={priority} onChange={e => setPriority(e.target.value)}>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
 
-      <div>
+        <button className="btn-add" onClick={handleAddTodo}>
+          Add Task
+        </button>
+        <button className="btn-clear" onClick={handleClearAll}>
+          Clear All
+        </button>
+      </div>
+
+      <div className="filter-section">
         <button
+          className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
           onClick={() => setFilter('all')}
-          style={{ fontWeight: filter === 'all' ? 'bold' : 'normal' }}
         >
           All
         </button>
         <button
+          className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
           onClick={() => setFilter('active')}
-          style={{ fontWeight: filter === 'active' ? 'bold' : 'normal' }}
         >
           Active
         </button>
         <button
+          className={`filter-btn ${filter === 'completed' ? 'active' : ''}`}
           onClick={() => setFilter('completed')}
-          style={{ fontWeight: filter === 'completed' ? 'bold' : 'normal' }}
         >
           Completed
         </button>
       </div>
 
-      <div>
+      <div className="sort-section">
         <label>
           <input
             type="checkbox"
@@ -174,15 +174,16 @@ function App() {
         </label>
       </div>
 
-      {todos.length === 0 && <p>No task yet</p>}
+      {todos.length === 0 && (
+        <p className="empty-message">No tasks yet. Add one to get started!</p>
+      )}
       {todos.length > 0 && (
-        <ul>
+        <ul className="todo-list">
           {getFilteredTodos().map(todo => (
             <li
               key={todo.id}
-              style={{
-                borderLeft: `4px solid ${getPriorityColor(todo.priority)}`,
-              }}
+              className="todo-item"
+              data-priority={todo.priority}
             >
               <input
                 type="checkbox"
@@ -190,36 +191,41 @@ function App() {
                 onChange={() => handleToggleComplete(todo.id)}
               />
               {todo.id === editingId ? (
-                <>
+                <div className="todo-content">
                   <input
                     type="text"
                     value={editText}
                     onChange={handleEditChange}
                   />
-                  <button onClick={handleSaveEdit}>Save</button>
-                </>
+                  <div className="todo-actions">
+                    <button className="btn-save" onClick={handleSaveEdit}>
+                      Save
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <>
+                <div className="todo-content">
                   <span
-                    style={{
-                      textDecoration: todo.completed ? 'line-through' : 'none',
-                    }}
+                    className={`todo-text ${todo.completed ? 'completed' : ''}`}
                   >
                     {todo.text}
                   </span>
-                  <button onClick={() => handleStartEdit(todo.id, todo.text)}>
-                    Edit
-                  </button>
-                </>
+                  <div className="todo-actions">
+                    <button
+                      className="btn-edit"
+                      onClick={() => handleStartEdit(todo.id, todo.text)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn-delete"
+                      onClick={() => handleDeleteTodo(todo.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
               )}
-
-              <button
-                onClick={() => {
-                  handleDeleteTodo(todo.id)
-                }}
-              >
-                Delete
-              </button>
             </li>
           ))}
         </ul>
