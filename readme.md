@@ -65,6 +65,39 @@ A full-featured todo list application with advanced functionality.
 
 ---
 
+### 3. Calculator
+
+A fully functional calculator with standard and percentage operations.
+
+**Concepts practiced:**
+
+- Multiple useState for state management
+- Event handling with parameters
+- String manipulation (replace, slice, includes)
+- Type conversion (Number, String)
+- Conditional logic with if/else
+- Error handling (division by zero)
+
+**Features:**
+
+- Basic arithmetic operations (+, -, \*, /)
+- Decimal number support with comma separator
+- Percentage calculations (both standalone and in context)
+- Backspace to delete last character
+- All Clear (AC) button
+- Display shows full operation (e.g., "52 + 23")
+- European number format (comma as decimal separator)
+- Error message for division by zero
+
+**Technical highlights:**
+
+- Smart number concatenation vs. replacement logic
+- Complex percentage logic: 50% → 0,5 and 200 + 10% → 220
+- String parsing to extract operands from display
+- Automatic conversion between dots and commas for calculations
+
+---
+
 ## Learning Goals
 
 - Master React hooks (useState, useEffect)
@@ -73,6 +106,8 @@ A full-featured todo list application with advanced functionality.
 - Work with localStorage API
 - Implement filtering and sorting logic
 - Build user-friendly interfaces
+- Handle complex conditional logic
+- Work with string manipulation and type conversion
 
 ## Technologies
 
@@ -83,12 +118,13 @@ A full-featured todo list application with advanced functionality.
 
 ## Future Plans
 
-- Add more mini projects (Calculator, Weather App, etc.)
+- Add more mini projects (Weather App, etc.)
 - Refactor into smaller components
 - Add TypeScript
 - Implement custom hooks
 - Add unit tests
 - Improve styling and responsiveness
+- Add keyboard support for calculator
 
 ## Status
 
@@ -96,8 +132,8 @@ Active learning project. Regular updates as I continue my React education.
 
 ## Timeline
 
-Started: [Your start date]
-Current focus: Building practical React applications
+Started: November 2024
+Current focus: Building practical React applications and mastering core concepts
 
 ## About
 
