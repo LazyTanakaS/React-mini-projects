@@ -10,6 +10,8 @@ These projects are created as part of my journey to master React and secure a Ju
 
 ### 1. Counter App
 
+**Live Demo:** [View Counter App](https://lazytanakas.github.io/FrontEnd-Learning/01-counter/)
+
 A simple counter application with history tracking.
 
 **Concepts practiced:**
@@ -30,6 +32,8 @@ A simple counter application with history tracking.
 ---
 
 ### 2. Todo List
+
+**Live Demo:** [View Todo List](https://lazytanakas.github.io/FrontEnd-Learning/02-todo-list/)
 
 A full-featured todo list application with advanced functionality.
 
@@ -67,6 +71,8 @@ A full-featured todo list application with advanced functionality.
 
 ### 3. Calculator
 
+**Live Demo:** [View Calculator](https://lazytanakas.github.io/FrontEnd-Learning/03-calculator/)
+
 A fully functional calculator with standard and percentage operations.
 
 **Concepts practiced:**
@@ -100,6 +106,8 @@ A fully functional calculator with standard and percentage operations.
 
 ### 4. Weather App
 
+**Live Demo:** [View Weather App](https://lazytanakas.github.io/FrontEnd-Learning/04-weather-app/)
+
 A React-based weather application with real-time data from OpenWeatherMap API.
 
 **Concepts practiced:**
@@ -130,3 +138,54 @@ A React-based weather application with real-time data from OpenWeatherMap API.
 - Single object state for related weather data
 - Smart history management (filters duplicates, updates temperatures)
 - Theme system with CSS variables
+- Multiple useEffect hooks for different side effects
+- Integration with external API (OpenWeatherMap)
+- React Icons library usage
+- localStorage for persistence (history, last city, theme)
+
+---
+
+## Learning Goals
+
+- Master React hooks (useState, useEffect)
+- Understand component state management
+- Practice with forms and controlled components
+- Work with localStorage API
+- Implement filtering and sorting logic
+- Build user-friendly interfaces
+- Handle complex conditional logic
+- Work with string manipulation and type conversion
+- Integrate external APIs
+- Handle async operations and loading states
+
+## Technologies
+
+- React 18
+- JavaScript (ES6+)
+- Vite
+- CSS3
+- React Icons
+- External APIs (OpenWeatherMap)
+
+## Future Plans
+
+- Refactor projects into smaller components
+- Add TypeScript
+- Implement custom hooks
+- Add unit tests
+- Improve styling and responsiveness
+- Add more features to existing projects
+- Build more complex applications
+
+## Status
+
+Active learning project. Regular updates as I continue my React education.
+
+## Timeline
+
+Started: November 2024
+Current focus: Building practical React applications, mastering hooks, and API integration
+
+## About
+
+These projects are part of my self-taught journey to become a Frontend Developer. I dedicate 2 hours daily to hands-on coding practice, focusing on understanding concepts deeply rather than just copying solutions.
