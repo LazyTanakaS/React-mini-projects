@@ -98,43 +98,35 @@ A fully functional calculator with standard and percentage operations.
 
 ---
 
-## Learning Goals
+### 4. Weather App
 
-- Master React hooks (useState, useEffect)
-- Understand component state management
-- Practice with forms and controlled components
-- Work with localStorage API
-- Implement filtering and sorting logic
-- Build user-friendly interfaces
-- Handle complex conditional logic
-- Work with string manipulation and type conversion
+A React-based weather application with real-time data from OpenWeatherMap API.
 
-## Technologies
+**Concepts practiced:**
 
-- React 18
-- JavaScript (ES6+)
-- Vite
-- CSS3
+- useState with multiple state variables
+- useEffect for API calls and localStorage sync
+- Async/await for API requests
+- Conditional rendering (loading/error/data states)
+- Array methods (map, filter)
+- Lazy initialization from localStorage
+- Error handling with try/catch/finally
+- Controlled components
 
-## Future Plans
+**Features:**
 
-- Add more mini projects (Weather App, etc.)
-- Refactor into smaller components
-- Add TypeScript
-- Implement custom hooks
-- Add unit tests
-- Improve styling and responsiveness
-- Add keyboard support for calculator
+- City search with real-time weather data
+- Detailed information: temperature, wind speed, humidity, visibility
+- Search history (last 7 cities)
+- Light/Dark theme toggle with persistence
+- Click on history to reload city weather
+- Automatic duplicate handling in history
+- Loading and error states
+- Responsive design with CSS custom properties
+- Beautiful gradients and animations
 
-## Status
+**Technical highlights:**
 
-Active learning project. Regular updates as I continue my React education.
-
-## Timeline
-
-Started: November 2024
-Current focus: Building practical React applications and mastering core concepts
-
-## About
-
-These projects are part of my self-taught journey to become a Frontend Developer. I dedicate 2 hours daily to hands-on coding practice, focusing on understanding concepts deeply rather than just copying solutions.
+- Single object state for related weather data
+- Smart history management (filters duplicates, updates temperatures)
+- Theme system with CSS variables
