@@ -128,4 +128,56 @@ A React-based weather application with real-time data from OpenWeatherMap API.
 - Search history (last 7 cities)
 - Light/Dark theme toggle with persistence
 - Click on history to reload city weather
-- Automatic dupl
+- Automatic duplicate prevention in history
+- Data persists after page reload
+
+**Technical highlights:**
+
+- Integration with OpenWeatherMap API
+- Environment variables for API key security
+- Debounced search to avoid excessive API calls
+- Loading and error state handling
+- Theme persistence with localStorage
+- Search history management with automatic trimming
+
+---
+
+### 5. Movie Search App
+
+**Live Demo:** [View Movie Search App](https://lazytanakas.github.io/React-mini-projects/movie-search-app/)
+
+A movie search application powered by The Movie Database (TMDb) API.
+
+**Concepts practiced:**
+
+- useState with multiple state variables
+- useEffect with cleanup for debouncing
+- Async/await for API requests
+- setTimeout and clearTimeout for debounce implementation
+- Conditional rendering (loading/error/empty states)
+- Array methods (map)
+- Error handling with try/catch/finally
+- Controlled inputs
+- Form submission prevention
+- Environment variables for API key management
+
+**Features:**
+
+- Real-time movie search with debouncing (500ms delay)
+- Movie cards with poster, title, release year, and rating
+- Minimum 3 characters validation
+- Search status indicators ("Searching...", "Type at least 3 characters...")
+- Clear search button
+- Placeholder image for movies without posters
+- Error handling for failed requests
+- Empty state message
+
+**Technical highlights:**
+
+- Debounced search implementation using useEffect and setTimeout
+- Automatic cleanup of setTimeout to prevent memory leaks
+- Query encoding with encodeURIComponent for safe API requests
+- Conditional image loading with fallback placeholder
+- Multiple loading states (isLoading, isTyping)
+- TMDb API integration for movie data
+- Responsive grid layout for movie cards
