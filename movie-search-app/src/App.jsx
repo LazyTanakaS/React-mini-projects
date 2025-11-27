@@ -2,10 +2,12 @@ import { use, useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
+  // STATE API
   const API_KEY = import.meta.env.VITE_TMDB_API_KEY
   const BASE_URL = 'https://api.themoviedb.org/3'
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 
+  // STATE SEARCH
   const [searchQuery, setSearchQuery] = useState('')
   const [movies, setMovies] = useState([])
   const [isLoading, setIsLoading] = useState(false)
