@@ -124,6 +124,59 @@ body {
   font-weight: 600;
 }
 
+.results-counter {
+  text-align: center;
+  padding: 20px;
+  font-size: 1.1rem;
+  color: var(--netflix-light-gray);
+  font-weight: 500;
+}
+
+.results-counter .count {
+  color: var(--netflix-red);
+  font-weight: 600;
+}
+
+/* Category Tabs */
+.category-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 30px 50px 20px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 12px 30px;
+  background: var(--netflix-gray);
+  color: var(--netflix-white);
+  border: 2px solid var(--netflix-gray);
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tab:hover {
+  background: var(--netflix-red);
+  border-color: var(--netflix-red);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+}
+
+.tab.active {
+  background: var(--netflix-red);
+  border-color: var(--netflix-red);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5);
+}
+
+.tab:active {
+  transform: translateY(0);
+}
+
 /* Main Content */
 .main {
   padding: 40px 50px;
@@ -214,6 +267,38 @@ body {
   font-weight: 600;
 }
 
+/* Scroll to Top Button */
+.scroll-to-top {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  width: 50px;
+  height: 50px;
+  background: var(--netflix-red);
+  color: var(--netflix-white);
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scroll-to-top:hover {
+  background: #f40612;
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(229, 9, 20, 0.7);
+}
+
+.scroll-to-top:active {
+  transform: translateY(-2px);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .header {
@@ -222,6 +307,16 @@ body {
 
   .header h1 {
     font-size: 28.8px;
+  }
+
+  .category-tabs {
+    padding: 20px 20px 10px;
+    gap: 10px;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-size: 14px;
   }
 
   .main {
@@ -235,5 +330,13 @@ body {
 
   .movie-poster {
     height: 225px;
+  }
+
+  .scroll-to-top {
+    bottom: 20px;
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
   }
 }

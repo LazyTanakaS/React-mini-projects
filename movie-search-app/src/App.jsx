@@ -11,6 +11,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+
+  // STATE CATEGORIES
+  const [category, setCategory] = useState('popular')
+  const [categoryMovies, setCategoryMovies] = useState([])
 
   //   SEARCH MOVIE
   const searchMovie = async query => {
@@ -65,6 +70,60 @@ function App() {
     return () => clearTimeout(timerId)
   }, [searchQuery])
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollButton(true)
+      } else {
+        setShowScrollButton(false)
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  const moviesToDisplay = searchQuery.length >= 3 ? movies : categoryMovies
+
+  // CATEGORY SEARCH
+  const fetchCategoryMovies = async category => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error('Failed to load category movies')
+      }
+
+      const data = await response.json()
+      setCategoryMovies(data.results || [])
+
+      if (data.results.length === 0) {
+        setError('No movies found in this category')
+      }
+    } catch (err) {
+      setError(err.message)
+      setCategoryMovies([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCategoryMovies(category)
+  }, [category])
+
   return (
     <div className="app">
       <header className="header">
@@ -93,6 +152,40 @@ function App() {
 
       {isTyping && <p className="search-status">Searching...</p>}
 
+      {!isLoading && !error && moviesToDisplay.length > 0 && (
+        <div className="results-counter">
+          <p>
+            Found <span className="count">{moviesToDisplay.length}</span> movies
+          </p>
+        </div>
+      )}
+
+      <div className="category-tabs">
+        <button
+          type="button"
+          className={category === 'popular' ? 'tab active' : 'tab'}
+          onClick={() => setCategory('popular')}
+        >
+          Popular
+        </button>
+
+        <button
+          type="button"
+          className={category === 'top_rated' ? 'tab active' : 'tab'}
+          onClick={() => setCategory('top_rated')}
+        >
+          Top Rated
+        </button>
+
+        <button
+          type="button"
+          className={category === 'now_playing' ? 'tab active' : 'tab'}
+          onClick={() => setCategory('now_playing')}
+        >
+          Now playing
+        </button>
+      </div>
+
       <main className="main">
         {isLoading && (
           <div className="loader">
@@ -106,15 +199,15 @@ function App() {
           </div>
         )}
 
-        {!isLoading && !error && movies.length === 0 && (
+        {!isLoading && !error && moviesToDisplay.length === 0 && (
           <div className="empty-state">
             <p>Search for your favorite movies</p>
           </div>
         )}
 
-        {!isLoading && !error && movies.length > 0 && (
+        {!isLoading && !error && moviesToDisplay.length > 0 && (
           <div className="movies-grid">
-            {movies.map(movie => (
+            {moviesToDisplay.map(movie => (
               <div className="movie-card" key={movie.id}>
                 <img
                   src={
@@ -143,6 +236,12 @@ function App() {
           </div>
         )}
       </main>
+
+      {showScrollButton && (
+        <button onClick={scrollToTop} className="scroll-to-top">
+          ↑
+        </button>
+      )}
     </div>
   )
 }
