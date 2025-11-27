@@ -234,6 +234,51 @@ body {
   box-shadow: 0 8px 16px rgba(229, 9, 20, 0.4);
 }
 
+/* Load More Button */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+  padding: 20px 0;
+}
+
+.load-more-button {
+  padding: 15px 40px;
+  background: var(--netflix-red);
+  color: var(--netflix-white);
+  border: 2px solid var(--netflix-red);
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(229, 9, 20, 0.3);
+}
+
+.load-more-button:hover:not(:disabled) {
+  background: #f40612;
+  border-color: #f40612;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(229, 9, 20, 0.5);
+}
+
+.load-more-button:active:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(229, 9, 20, 0.4);
+}
+
+.load-more-button:disabled {
+  background: var(--netflix-gray);
+  border-color: var(--netflix-gray);
+  color: var(--netflix-light-gray);
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
 .movie-poster {
   width: 100%;
   height: 300px;
@@ -330,6 +375,16 @@ body {
 
   .movie-poster {
     height: 225px;
+  }
+
+  .load-more-container {
+    margin-top: 30px;
+    padding: 15px 0;
+  }
+
+  .load-more-button {
+    padding: 12px 30px;
+    font-size: 16px;
   }
 
   .scroll-to-top {

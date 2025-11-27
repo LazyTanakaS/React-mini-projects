@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
@@ -21,8 +21,16 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMovie, setSelectedMovie] = useState(null)
 
+  // STATE PAGES
+  const [searchPage, setSearchPage] = useState(1)
+  const [categoryPage, setCategoryPage] = useState(1)
+
+  // STATE TOTAL PAGES
+  const [searchTotalPages, setSearchTotalPages] = useState(1)
+  const [categoryTotalPages, setCategoryTotalPages] = useState(1)
+
   //   SEARCH MOVIE
-  const searchMovie = async query => {
+  const searchMovie = async (query, page = 1) => {
     if (query === '') {
       setError('Please enter the name of the movie')
       return
@@ -32,7 +40,7 @@ function App() {
     setError(null)
 
     try {
-      const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(
+      const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&page=${page}&query=${encodeURIComponent(
         query
       )}`
       const response = await fetch(url)
@@ -43,7 +51,13 @@ function App() {
 
       const data = await response.json()
 
-      setMovies(data.results || [])
+      if (page === 1) {
+        setMovies(data.results || [])
+      } else {
+        setMovies(prev => [...prev, ...(data.results || [])])
+      }
+
+      setSearchTotalPages(data.total_pages || 1)
 
       if (data.results.length === 0) {
         setError('No movie found')
@@ -65,9 +79,10 @@ function App() {
     }
 
     setIsTyping(true)
+    setCategoryPage(1)
 
     const timerId = setTimeout(() => {
-      searchMovie(searchQuery)
+      searchMovie(searchQuery, 1)
       setIsTyping(false)
     }, 500)
 
@@ -98,12 +113,12 @@ function App() {
   const moviesToDisplay = searchQuery.length >= 3 ? movies : categoryMovies
 
   // CATEGORY SEARCH
-  const fetchCategoryMovies = async category => {
+  const fetchCategoryMovies = async (category, page = 1) => {
     setIsLoading(true)
     setError(null)
 
     try {
-      const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
+      const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
       const response = await fetch(url)
 
       if (!response.ok) {
@@ -111,7 +126,14 @@ function App() {
       }
 
       const data = await response.json()
-      setCategoryMovies(data.results || [])
+
+      if (page === 1) {
+        setCategoryMovies(data.results || [])
+      } else {
+        setCategoryMovies(prev => [...prev, ...(data.results || [])])
+      }
+
+      setCategoryTotalPages(data.total_pages || 1)
 
       if (data.results.length === 0) {
         setError('No movies found in this category')
@@ -125,7 +147,8 @@ function App() {
   }
 
   useEffect(() => {
-    fetchCategoryMovies(category)
+    setSearchPage(1)
+    fetchCategoryMovies(category, 1)
   }, [category])
 
   // DATAIL FUNCTION
@@ -252,38 +275,64 @@ function App() {
         )}
 
         {!isLoading && !error && moviesToDisplay.length > 0 && (
-          <div className="movies-grid">
-            {moviesToDisplay.map(movie => (
-              <div
-                className="movie-card"
-                key={movie.id}
-                onClick={() => fetchMovieDetails(movie.id)}
-              >
-                <img
-                  src={
-                    movie.poster_path
-                      ? `${IMAGE_BASE_URL}${movie.poster_path}`
-                      : 'https://via.placeholder.com/500x750?text=No+Image'
-                  }
-                  alt={movie.title}
-                  className="movie-poster"
-                />
+          <>
+            <div className="movies-grid">
+              {moviesToDisplay.map(movie => (
+                <div
+                  className="movie-card"
+                  key={movie.id}
+                  onClick={() => fetchMovieDetails(movie.id)}
+                >
+                  <img
+                    src={
+                      movie.poster_path
+                        ? `${IMAGE_BASE_URL}${movie.poster_path}`
+                        : 'https://via.placeholder.com/500x750?text=No+Image'
+                    }
+                    alt={movie.title}
+                    className="movie-poster"
+                  />
 
-                <div className="movie-info">
-                  <h3 className="movie-title">{movie.title}</h3>
-                  <p className="movie-release">
-                    {movie.release_date
-                      ? movie.release_date.split('-')[0]
-                      : 'N/A'}
-                  </p>
-                  <p className="movie-rating">
-                    ⭐{' '}
-                    {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
-                  </p>
+                  <div className="movie-info">
+                    <h3 className="movie-title">{movie.title}</h3>
+                    <p className="movie-release">
+                      {movie.release_date
+                        ? movie.release_date.split('-')[0]
+                        : 'N/A'}
+                    </p>
+                    <p className="movie-rating">
+                      ⭐{' '}
+                      {movie.vote_average
+                        ? movie.vote_average.toFixed(1)
+                        : 'N/A'}
+                    </p>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {(searchQuery.length >= 3
+              ? searchPage < searchTotalPages
+              : categoryPage < categoryTotalPages) && (
+              <div className="load-more-container">
+                <button
+                  onClick={() => {
+                    if (searchQuery.length >= 3) {
+                      setSearchPage(prev => prev + 1)
+                      searchMovie(searchQuery, searchPage + 1)
+                    } else {
+                      setCategoryPage(prev => prev + 1)
+                      fetchCategoryMovies(category, categoryPage + 1)
+                    }
+                  }}
+                  className="load-more-button"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Loading...' : 'Load More Movies'}
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
 
