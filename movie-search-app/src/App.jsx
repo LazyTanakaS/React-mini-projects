@@ -17,6 +17,10 @@ function App() {
   const [category, setCategory] = useState('popular')
   const [categoryMovies, setCategoryMovies] = useState([])
 
+  // STATE DATAILS
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedMovie, setSelectedMovie] = useState(null)
+
   //   SEARCH MOVIE
   const searchMovie = async query => {
     if (query === '') {
@@ -124,6 +128,48 @@ function App() {
     fetchCategoryMovies(category)
   }, [category])
 
+  // DATAIL FUNCTION
+  const fetchMovieDetails = async movieId => {
+    try {
+      const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error('Failed to load details...')
+      }
+
+      const data = await response.json()
+      setSelectedMovie(data)
+      setIsModalOpen(true)
+    } catch (err) {
+      console.error('Error fetching movie details:', err)
+      setError(err.message)
+    }
+  }
+
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isModalOpen])
+
+  useEffect(() => {
+    const handleEscape = e => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isModalOpen])
+
   return (
     <div className="app">
       <header className="header">
@@ -208,7 +254,11 @@ function App() {
         {!isLoading && !error && moviesToDisplay.length > 0 && (
           <div className="movies-grid">
             {moviesToDisplay.map(movie => (
-              <div className="movie-card" key={movie.id}>
+              <div
+                className="movie-card"
+                key={movie.id}
+                onClick={() => fetchMovieDetails(movie.id)}
+              >
                 <img
                   src={
                     movie.poster_path
@@ -241,6 +291,76 @@ function App() {
         <button onClick={scrollToTop} className="scroll-to-top">
           ↑
         </button>
+      )}
+
+      {/* Modal */}
+      {isModalOpen && selectedMovie && (
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <button
+              className="modal-close"
+              onClick={() => setIsModalOpen(false)}
+            >
+              ✕
+            </button>
+
+            <div className="modal-header">
+              {selectedMovie.backdrop_path && (
+                <img
+                  src={`${IMAGE_BASE_URL}${selectedMovie.backdrop_path}`}
+                  alt={selectedMovie.title}
+                  className="modal-backdrop"
+                />
+              )}
+              <h2 className="modal-title">{selectedMovie.title}</h2>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-info">
+                <p>
+                  <strong>Release Date:</strong>{' '}
+                  {selectedMovie.release_date || 'N/A'}
+                </p>
+                <p>
+                  <strong>Rating</strong>⭐{' '}
+                  {selectedMovie.vote_average
+                    ? selectedMovie.vote_average.toFixed(1)
+                    : 'N/A'}{' '}
+                  / 10
+                </p>
+                <p>
+                  <strong>Runtime</strong>{' '}
+                  {selectedMovie.runtime
+                    ? `${selectedMovie.runtime} min`
+                    : 'N/A'}
+                </p>
+                {selectedMovie.genres && selectedMovie.genres.length > 0 && (
+                  <p>
+                    <strong>Genres:</strong>{' '}
+                    {selectedMovie.genres.map(g => g.name).join(', ')}
+                  </p>
+                )}
+                {selectedMovie.revenue > 0 && (
+                  <p>
+                    <strong>Revenue</strong> $
+                    {selectedMovie.revenue.toLocaleString()}
+                  </p>
+                )}
+              </div>
+
+              <div className="modal-overview">
+                <h3>Overview</h3>
+                <p>{selectedMovie.overview || 'No overview available'}</p>
+              </div>
+
+              {selectedMovie.tagline && (
+                <div className="modal-tagline">
+                  <em>"{selectedMovie.tagline}"</em>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
