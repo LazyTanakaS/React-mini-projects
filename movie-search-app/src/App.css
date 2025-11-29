@@ -247,6 +247,124 @@ body {
   user-select: none;
 }
 
+.year-input {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.year-input input {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.year-input input:focus {
+  outline: none;
+  border-color: #e50914;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.year-input input:not(:placeholder-shown) {
+  border-color: var(--netflix-red);
+  background: rgba(229, 9, 20, 0.1);
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.3);
+}
+
+.year-input input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.year-input span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.rating-slider {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  position: relative;
+}
+
+.rating-slider:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.rating-slider:not([value='0']) {
+  background: linear-gradient(
+    to right,
+    var(--netflix-red) 0%,
+    var(--netflix-red) var(--value, 0%),
+    rgba(255, 255, 255, 0.2) var(--value, 0%),
+    rgba(255, 255, 255, 0.2) 100%
+  );
+}
+
+.rating-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #e50914;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(229, 9, 20, 0.5);
+}
+
+.rating-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.7);
+}
+
+.rating-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #e50914;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(229, 9, 20, 0.5);
+}
+
+.rating-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.7);
+}
+
+.rating-slider::-moz-range-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  height: 8px;
+}
+
+.genres-checkbox input[type='checkbox']:checked + label {
+  color: var(--netflix-red);
+  font-weight: 600;
+}
+
+.genres-checkbox:has(input[type='checkbox']:checked) {
+  background: rgba(229, 9, 20, 0.15);
+  border-color: var(--netflix-red);
+  box-shadow: 0 0 8px rgba(229, 9, 20, 0.3);
+}
+
 .filter-action {
   display: flex;
   gap: 15px;
@@ -271,6 +389,26 @@ body {
   background: var(--netflix-red);
   color: var(--netflix-white);
   border-color: var(--netflix-red);
+  position: relative;
+  overflow: hidden;
+}
+
+.apply-filter-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.apply-filter-button:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .apply-filter-button:hover {
@@ -321,12 +459,50 @@ body {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .active-filters strong {
   color: var(--netflix-red);
   font-weight: 600;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-filters strong::before {
+  content: '🎬';
+  font-size: 18px;
+}
+
+.active-filters span {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(229, 9, 20, 0.2);
+  border-radius: 20px;
+  border: 1px solid rgba(229, 9, 20, 0.4);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.active-filters span:hover {
+  background: rgba(229, 9, 20, 0.3);
+  transform: scale(1.05);
 }
 
 .main {

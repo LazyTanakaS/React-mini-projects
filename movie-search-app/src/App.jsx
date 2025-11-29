@@ -28,7 +28,7 @@ function App() {
 
   const [genres, setGenres] = useState([])
   const [selectedGenres, setSelectedGenres] = useState([])
-  const [yearForm, setYearForm] = useState('')
+  const [yearFrom, setYearFrom] = useState('')
   const [yearTo, setYearTo] = useState('')
   const [minRating, setMinRating] = useState(0)
 
@@ -228,6 +228,18 @@ function App() {
         url += `&with_genres=${filters.genres.join(',')}`
       }
 
+      if (filters.yearFrom) {
+        url += `&primary_release_date.gte=${filters.yearFrom}-01-01`
+      }
+
+      if (filters.yearTo) {
+        url += `&primary_release_date.lte=${filters.yearTo}-12-31`
+      }
+
+      if (filters.minRating > 0) {
+        url += `&vote_average.gte=${filters.minRating}`
+      }
+
       const response = await fetch(url)
 
       if (!response.ok) {
@@ -340,14 +352,65 @@ function App() {
               ))}
             </div>
 
+            <div className="filter-group">
+              <label>Release Year:</label>
+              <div className="year-input">
+                <input
+                  type="number"
+                  placeholder="From (e.g. 2000)"
+                  value={yearFrom}
+                  onChange={e => setYearFrom(e.target.value)}
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  className="year-input"
+                />
+                <span>-</span>
+                <input
+                  type="number"
+                  placeholder="To (e.g. 2024"
+                  value={yearTo}
+                  onChange={e => setYearTo(e.target.value)}
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  className="year-input"
+                />
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label>Minimum Rating: {minRating.toFixed(1)} ⭐</label>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step={'0.5'}
+                value={minRating}
+                onChange={e => setMinRating(parseFloat(e.target.value))}
+                className="rating-slider"
+              />
+            </div>
+
             <div className="filter-action">
               <button
                 className="apply-filter-button"
                 onClick={() => {
                   setCategoryPage(1)
-                  discoverMovies({ genres: selectedGenres }, 1)
+                  discoverMovies(
+                    {
+                      genres: selectedGenres,
+                      yearFrom,
+                      yearTo,
+                      minRating,
+                    },
+                    1
+                  )
                 }}
-                disabled={selectedGenres.length === 0}
+                disabled={
+                  selectedGenres.length === 0 &&
+                  !yearFrom &&
+                  !yearTo &&
+                  minRating === 0
+                }
               >
                 Apply
               </button>
@@ -356,6 +419,9 @@ function App() {
                 className="reset-filter-button"
                 onClick={() => {
                   setSelectedGenres([])
+                  setYearFrom('')
+                  setYearTo('')
+                  setMinRating(0)
                   setFiltersApplied(false)
                   setCategoryPage(1)
                   fetchCategoryMovies(category, 1)
@@ -365,18 +431,39 @@ function App() {
               </button>
             </div>
 
-            {filtersApplied && selectedGenres.length > 0 && (
-              <div className="active-filters">
-                <strong>Active filters:</strong>
-                {selectedGenres
-                  .map(id => {
-                    const genre = genres.find(g => g.id === id)
-                    return genre ? genre.name : ''
-                  })
-                  .filter(Boolean)
-                  .join(', ')}
-              </div>
-            )}
+            {(filtersApplied && selectedGenres.length > 0) ||
+              yearFrom ||
+              yearTo ||
+              (minRating > 0 && (
+                <div className="active-filters">
+                  <strong>Active filters:</strong>
+
+                  {selectedGenres.length > 0 && (
+                    <span>
+                      Genres:{' '}
+                      {selectedGenres
+                        .map(id => {
+                          const genre = genres.find(g => g.id === id)
+                          return genre ? genre.name : ''
+                        })
+                        .filter(Boolean)
+                        .join(', ')}
+                    </span>
+                  )}
+
+                  {(yearFrom || yearTo) && (
+                    <span>
+                      {' • '}Year: {yearFrom || '?'} - {yearTo || '?'}
+                    </span>
+                  )}
+
+                  {minRating > 0 && (
+                    <span>
+                      {' • '}Rating: ≥ {minRating.toFixed(1)}⭐
+                    </span>
+                  )}
+                </div>
+              ))}
           </div>
         </div>
       )}
@@ -449,7 +536,12 @@ function App() {
                     } else if (filtersApplied) {
                       setCategoryPage(prev => prev + 1)
                       discoverMovies(
-                        { genres: selectedGenres },
+                        {
+                          genres: selectedGenres,
+                          yearFrom,
+                          yearTo,
+                          minRating,
+                        },
                         categoryPage + 1
                       )
                     } else {
