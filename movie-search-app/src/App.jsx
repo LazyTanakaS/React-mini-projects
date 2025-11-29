@@ -2,12 +2,10 @@ import { use, useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
-  // STATE API
   const API_KEY = import.meta.env.VITE_TMDB_API_KEY
   const BASE_URL = 'https://api.themoviedb.org/3'
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 
-  // STATE SEARCH
   const [searchQuery, setSearchQuery] = useState('')
   const [movies, setMovies] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -15,23 +13,25 @@ function App() {
   const [isTyping, setIsTyping] = useState(false)
   const [showScrollButton, setShowScrollButton] = useState(false)
 
-  // STATE CATEGORIES
   const [category, setCategory] = useState('popular')
   const [categoryMovies, setCategoryMovies] = useState([])
+  const [filtersApplied, setFiltersApplied] = useState(false)
 
-  // STATE DATAILS
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMovie, setSelectedMovie] = useState(null)
 
-  // STATE PAGES
   const [searchPage, setSearchPage] = useState(1)
   const [categoryPage, setCategoryPage] = useState(1)
 
-  // STATE TOTAL PAGES
   const [searchTotalPages, setSearchTotalPages] = useState(1)
   const [categoryTotalPages, setCategoryTotalPages] = useState(1)
 
-  //   SEARCH MOVIE
+  const [genres, setGenres] = useState([])
+  const [selectedGenres, setSelectedGenres] = useState([])
+  const [yearForm, setYearForm] = useState('')
+  const [yearTo, setYearTo] = useState('')
+  const [minRating, setMinRating] = useState(0)
+
   const searchMovie = async (query, page = 1) => {
     if (query === '') {
       setError('Please enter the name of the movie')
@@ -114,7 +114,6 @@ function App() {
 
   const moviesToDisplay = searchQuery.length >= 3 ? movies : categoryMovies
 
-  // CATEGORY SEARCH
   const fetchCategoryMovies = async (category, page = 1) => {
     setIsLoading(true)
     setError(null)
@@ -149,11 +148,13 @@ function App() {
   }
 
   useEffect(() => {
+    setSelectedGenres([])
+    setFiltersApplied(false)
+
     setSearchPage(1)
     fetchCategoryMovies(category, 1)
   }, [category])
 
-  // DATAIL FUNCTION
   const fetchMovieDetails = async movieId => {
     try {
       const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
@@ -194,6 +195,62 @@ function App() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [isModalOpen])
+
+  const fetchGenres = async () => {
+    try {
+      const url = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error('Failde to load genres')
+      }
+
+      const data = await response.json()
+
+      setGenres(data.genres)
+    } catch (err) {
+      console.error('Failder to fetch genres:', err)
+    }
+  }
+
+  useEffect(() => {
+    fetchGenres()
+  }, [])
+
+  const discoverMovies = async (filters, page = 1) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&page=${page}`
+
+      if (filters.genres && filters.genres.length > 0) {
+        url += `&with_genres=${filters.genres.join(',')}`
+      }
+
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error('Failed to load Filters')
+      }
+
+      const data = await response.json()
+
+      if (page === 1) {
+        setCategoryMovies(data.results || [])
+      } else {
+        setCategoryMovies(prev => [...prev, ...(data.results || [])])
+      }
+
+      setCategoryTotalPages(data.total_pages || 1)
+      setFiltersApplied(true)
+    } catch (err) {
+      setError(err.message)
+      setCategoryMovies([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="app">
@@ -256,6 +313,73 @@ function App() {
           Now playing
         </button>
       </div>
+
+      {searchQuery.length < 3 && (
+        <div className="filters-section">
+          <h3>Filters</h3>
+
+          <div className="filter-group">
+            <label>Genres:</label>
+            <div className="genres-list">
+              {genres.map(genre => (
+                <div className="genres-checkbox" key={genre.id}>
+                  <input
+                    type="checkbox"
+                    id={`genre-${genre.id}`}
+                    checked={selectedGenres.includes(genre.id)}
+                    onChange={() => {
+                      setSelectedGenres(prev =>
+                        prev.includes(genre.id)
+                          ? prev.filter(id => id !== genre.id)
+                          : [...prev, genre.id]
+                      )
+                    }}
+                  />
+                  <label htmlFor={`genre-${genre.id}`}>{genre.name}</label>
+                </div>
+              ))}
+            </div>
+
+            <div className="filter-action">
+              <button
+                className="apply-filter-button"
+                onClick={() => {
+                  setCategoryPage(1)
+                  discoverMovies({ genres: selectedGenres }, 1)
+                }}
+                disabled={selectedGenres.length === 0}
+              >
+                Apply
+              </button>
+
+              <button
+                className="reset-filter-button"
+                onClick={() => {
+                  setSelectedGenres([])
+                  setFiltersApplied(false)
+                  setCategoryPage(1)
+                  fetchCategoryMovies(category, 1)
+                }}
+              >
+                Reset
+              </button>
+            </div>
+
+            {filtersApplied && selectedGenres.length > 0 && (
+              <div className="active-filters">
+                <strong>Active filters:</strong>
+                {selectedGenres
+                  .map(id => {
+                    const genre = genres.find(g => g.id === id)
+                    return genre ? genre.name : ''
+                  })
+                  .filter(Boolean)
+                  .join(', ')}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <main className="main">
         {isLoading && (
@@ -322,6 +446,12 @@ function App() {
                     if (searchQuery.length >= 3) {
                       setSearchPage(prev => prev + 1)
                       searchMovie(searchQuery, searchPage + 1)
+                    } else if (filtersApplied) {
+                      setCategoryPage(prev => prev + 1)
+                      discoverMovies(
+                        { genres: selectedGenres },
+                        categoryPage + 1
+                      )
                     } else {
                       setCategoryPage(prev => prev + 1)
                       fetchCategoryMovies(category, categoryPage + 1)
