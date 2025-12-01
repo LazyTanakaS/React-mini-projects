@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
@@ -31,6 +31,21 @@ function App() {
   const [yearFrom, setYearFrom] = useState('')
   const [yearTo, setYearTo] = useState('')
   const [minRating, setMinRating] = useState(0)
+
+  // LOCAL STORAGE - Favorites
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('favorites')
+
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (err) {
+        console.error('Failed to parse favorites', err)
+        return []
+      }
+    }
+    return []
+  })
 
   const searchMovie = async (query, page = 1) => {
     if (query === '') {
@@ -112,7 +127,16 @@ function App() {
     })
   }
 
-  const moviesToDisplay = searchQuery.length >= 3 ? movies : categoryMovies
+  const moviesToDisplay =
+    searchQuery.length >= 3
+      ? movies
+      : category === 'favorites'
+      ? favorites
+      : categoryMovies
+
+  console.log('Category:', category)
+  console.log('Favorites count:', favorites.length)
+  console.log('Movies to display:', moviesToDisplay.length)
 
   const fetchCategoryMovies = async (category, page = 1) => {
     setIsLoading(true)
@@ -148,10 +172,15 @@ function App() {
   }
 
   useEffect(() => {
+    if (category === 'favorites') {
+      setSelectedGenres([])
+      setFiltersApplied(false)
+      return
+    }
+
     setSelectedGenres([])
     setFiltersApplied(false)
-
-    setSearchPage(1)
+    setCategoryPage(1)
     fetchCategoryMovies(category, 1)
   }, [category])
 
@@ -264,6 +293,27 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites))
+  }, [favorites])
+
+  const addToFavorites = movie => {
+    if (!favorites.some(fav => fav.id === movie.id)) {
+      setFavorites(prev => [...prev, movie])
+      console.log('Added to favorites:', movie)
+      console.log('All favorites:', [...favorites, movie])
+    }
+  }
+
+  const removeFromFavorites = movieId => {
+    setFavorites(prev => prev.filter(fav => fav.id !== movieId))
+    console.log('Removed from favorites:', movieId)
+  }
+
+  const isFavorite = movieId => {
+    return favorites.some(fav => fav.id === movieId)
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -324,9 +374,17 @@ function App() {
         >
           Now playing
         </button>
+
+        <button
+          type="button"
+          className={category === 'favorites' ? 'tab active' : 'tab'}
+          onClick={() => setCategory('favorites')}
+        >
+          ❤️ Favorites ({favorites.length})
+        </button>
       </div>
 
-      {searchQuery.length < 3 && (
+      {searchQuery.length < 3 && category !== 'favorites' && (
         <div className="filters-section">
           <h3>Filters</h3>
 
@@ -483,7 +541,11 @@ function App() {
 
         {!isLoading && !error && moviesToDisplay.length === 0 && (
           <div className="empty-state">
-            <p>Search for your favorite movies</p>
+            <p>
+              {category === 'favorites'
+                ? 'No favorites yet. Add movies by clicking the ❤️ button!'
+                : 'Search for your favorite movies'}
+            </p>
           </div>
         )}
 
@@ -496,6 +558,22 @@ function App() {
                   key={movie.id}
                   onClick={() => fetchMovieDetails(movie.id)}
                 >
+                  <button
+                    className={`favorite-btn ${
+                      isFavorite(movie.id) ? 'active' : ''
+                    }`}
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (isFavorite(movie.id)) {
+                        removeFromFavorites(movie.id)
+                      } else {
+                        addToFavorites(movie)
+                      }
+                    }}
+                  >
+                    {isFavorite(movie.id) ? '❤️' : '🤍'}
+                  </button>
+
                   <img
                     src={
                       movie.poster_path
@@ -524,38 +602,39 @@ function App() {
               ))}
             </div>
 
-            {(searchQuery.length >= 3
-              ? searchPage < searchTotalPages
-              : categoryPage < categoryTotalPages) && (
-              <div className="load-more-container">
-                <button
-                  onClick={() => {
-                    if (searchQuery.length >= 3) {
-                      setSearchPage(prev => prev + 1)
-                      searchMovie(searchQuery, searchPage + 1)
-                    } else if (filtersApplied) {
-                      setCategoryPage(prev => prev + 1)
-                      discoverMovies(
-                        {
-                          genres: selectedGenres,
-                          yearFrom,
-                          yearTo,
-                          minRating,
-                        },
-                        categoryPage + 1
-                      )
-                    } else {
-                      setCategoryPage(prev => prev + 1)
-                      fetchCategoryMovies(category, categoryPage + 1)
-                    }
-                  }}
-                  className="load-more-button"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Loading...' : 'Load More Movies'}
-                </button>
-              </div>
-            )}
+            {category !== 'favorites' &&
+              (searchQuery.length >= 3
+                ? searchPage < searchTotalPages
+                : categoryPage < categoryTotalPages) && (
+                <div className="load-more-container">
+                  <button
+                    onClick={() => {
+                      if (searchQuery.length >= 3) {
+                        setSearchPage(prev => prev + 1)
+                        searchMovie(searchQuery, searchPage + 1)
+                      } else if (filtersApplied) {
+                        setCategoryPage(prev => prev + 1)
+                        discoverMovies(
+                          {
+                            genres: selectedGenres,
+                            yearFrom,
+                            yearTo,
+                            minRating,
+                          },
+                          categoryPage + 1
+                        )
+                      } else {
+                        setCategoryPage(prev => prev + 1)
+                        fetchCategoryMovies(category, categoryPage + 1)
+                      }
+                    }}
+                    className="load-more-button"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Loading...' : 'Load More Movies'}
+                  </button>
+                </div>
+              )}
           </>
         )}
       </main>

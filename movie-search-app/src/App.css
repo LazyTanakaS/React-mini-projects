@@ -173,6 +173,35 @@ body {
   transform: translateY(0);
 }
 
+/* Favorites Tab Special Styling */
+.category-tabs .tab:nth-child(4) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-tabs .tab:nth-child(4):hover {
+  background: linear-gradient(135deg, var(--netflix-red) 0%, #c11119 100%);
+}
+
+.category-tabs .tab:nth-child(4).active {
+  background: linear-gradient(135deg, var(--netflix-red) 0%, #c11119 100%);
+  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 6px 20px rgba(229, 9, 20, 0.6);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 6px 20px rgba(229, 9, 20, 0.6);
+  }
+  50% {
+    box-shadow: 0 8px 30px rgba(229, 9, 20, 0.9);
+    transform: translateY(-3px);
+  }
+}
+
 .filters-section {
   background: var(--netflix-gray);
   padding: 25px 50px;
@@ -544,6 +573,7 @@ body {
 }
 
 .movie-card {
+  position: relative;
   background: var(--netflix-gray);
   border-radius: 8px;
   overflow: hidden;
@@ -554,6 +584,45 @@ body {
 .movie-card:hover {
   transform: scale(1.05);
   box-shadow: 0 8px 16px rgba(229, 9, 20, 0.4);
+}
+
+/* Favorite Button */
+.favorite-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 5;
+  backdrop-filter: blur(5px);
+}
+
+.favorite-btn:hover {
+  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.favorite-btn.active {
+  animation: heartbeat 0.3s ease;
+}
+
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
 }
 
 .load-more-container {
@@ -843,6 +912,36 @@ body {
 
 .modal-body {
   padding: 0 30px 30px;
+}
+
+/* Modal Favorite Button */
+.modal-favorite {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--netflix-white);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 25px;
+  backdrop-filter: blur(10px);
+}
+
+.modal-favorite:hover {
+  background: rgba(229, 9, 20, 0.2);
+  border-color: var(--netflix-red);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+}
+
+.modal-favorite.active {
+  background: rgba(229, 9, 20, 0.3);
+  border-color: var(--netflix-red);
 }
 
 .modal-info {
