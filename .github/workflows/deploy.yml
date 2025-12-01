@@ -54,6 +54,15 @@ jobs:
           npm run build
           cp -r dist ../dist/weather-app
 
+      - name: Build Movie Search App
+        env:
+          VITE_TMDB_API_KEY: ${{ secrets.VITE_TMDB_API_KEY }}
+        run: |
+          cd movie-search-app
+          npm ci
+          npm run build
+          cp -r dist ../dist/movie-search-app
+
       - name: Create index.html
         run: |
           cat > dist/index.html << 'EOF'
@@ -77,6 +86,7 @@ jobs:
               <li><a href="./todo-list-app/">2. Todo List</a></li>
               <li><a href="./calculator-app/">3. Calculator</a></li>
               <li><a href="./weather-app/">4. Weather App</a></li>
+              <li><a href="./movie-search-app/">5. Movie Search App</a></li>
             </ul>
           </body>
           </html>
