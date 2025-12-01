@@ -48,6 +48,7 @@ body {
 }
 
 .search-form {
+  position: relative;
   display: flex;
   justify-content: center;
   text-align: center;
@@ -56,8 +57,13 @@ body {
   width: 100%;
 }
 
-.search-input {
+.search-input-wrapper {
+  position: relative;
   flex: 1;
+}
+
+.search-input {
+  width: 100%;
   padding: 12px 20px;
   border: 2px solid var(--netflix-gray);
   border-radius: 4px;
@@ -88,6 +94,99 @@ body {
 .clear-button:hover {
   background: var(--netflix-red);
   border-color: var(--netflix-red);
+}
+
+/* Search History Dropdown */
+.search-history-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--netflix-gray);
+  border: 1px solid rgba(229, 9, 20, 0.3);
+  border-radius: 0 0 4px 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.history-item {
+  padding: 12px 20px;
+  color: var(--netflix-white);
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+  text-align: left;
+  font-size: 15px;
+}
+
+.history-item:last-of-type {
+  border-bottom: none;
+}
+
+.history-item:hover {
+  background: rgba(229, 9, 20, 0.1);
+}
+
+.history-item::before {
+  content: '🕒';
+  opacity: 0.7;
+}
+
+.clear-history-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: transparent;
+  color: var(--netflix-red);
+  border: none;
+  border-top: 1px solid rgba(229, 9, 20, 0.3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.clear-history-btn:hover {
+  background: rgba(229, 9, 20, 0.1);
+}
+
+/* Search History Scrollbar */
+.search-history-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-history-dropdown::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.search-history-dropdown::-webkit-scrollbar-thumb {
+  background: var(--netflix-red);
+  border-radius: 3px;
+}
+
+.search-history-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #f40612;
 }
 
 .search-button {
@@ -1089,6 +1188,21 @@ body {
 
   .modal-tagline em {
     font-size: 16px;
+  }
+
+  /* Search History Mobile */
+  .search-history-dropdown {
+    max-height: 250px;
+  }
+
+  .history-item {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  .clear-history-btn {
+    padding: 10px 15px;
+    font-size: 13px;
   }
 }
 

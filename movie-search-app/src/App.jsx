@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
@@ -32,6 +32,8 @@ function App() {
   const [yearTo, setYearTo] = useState('')
   const [minRating, setMinRating] = useState(0)
 
+  const [showHistory, setShowHistory] = useState(false)
+
   // LOCAL STORAGE - Favorites
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('favorites')
@@ -47,45 +49,79 @@ function App() {
     return []
   })
 
-  const searchMovie = async (query, page = 1) => {
-    if (query === '') {
-      setError('Please enter the name of the movie')
-      return
+  // SEARCH HISTORY
+  const [searchHistory, setSearchHistory] = useState(() => {
+    const search = localStorage.getItem('searchHistory')
+
+    if (search) {
+      try {
+        return JSON.parse(search)
+      } catch (err) {
+        console.error('Failed to parse search', err)
+        return []
+      }
     }
+    return []
+  })
 
-    setIsLoading(true)
-    setError(null)
+  useEffect(() => {
+    localStorage.setItem('searchHistory', JSON.stringify(searchHistory))
+  }, [searchHistory])
 
-    try {
-      const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&page=${page}&query=${encodeURIComponent(
-        query
-      )}`
-      const response = await fetch(url)
+  const addToSearchHistory = query => {
+    if (!query || query.trim() === '') return
 
-      if (!response.ok) {
-        throw new Error('Movie not found')
-      }
-
-      const data = await response.json()
-
-      if (page === 1) {
-        setMovies(data.results || [])
-      } else {
-        setMovies(prev => [...prev, ...(data.results || [])])
-      }
-
-      setSearchTotalPages(data.total_pages || 1)
-
-      if (data.results.length === 0) {
-        setError('No movie found')
-      }
-    } catch (err) {
-      setError(err.message)
-      setMovies([])
-    } finally {
-      setIsLoading(false)
-    }
+    setSearchHistory(prev => {
+      const filtered = prev.filter(item => item !== query)
+      return [query, ...filtered].slice(0, 5)
+    })
   }
+
+  const searchMovie = useCallback(
+    async (query, page = 1) => {
+      if (query === '') {
+        setError('Please enter the name of the movie')
+        return
+      }
+
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&page=${page}&query=${encodeURIComponent(
+          query
+        )}`
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          throw new Error('Movie not found')
+        }
+
+        const data = await response.json()
+
+        if (page === 1) {
+          setMovies(data.results || [])
+          if (data.results && data.results.length > 0) {
+            addToSearchHistory(query)
+          }
+        } else {
+          setMovies(prev => [...prev, ...(data.results || [])])
+        }
+
+        setSearchTotalPages(data.total_pages || 1)
+
+        if (data.results.length === 0) {
+          setError('No movie found')
+        }
+      } catch (err) {
+        setError(err.message)
+        setMovies([])
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [API_KEY, BASE_URL]
+  )
 
   useEffect(() => {
     if (!searchQuery || searchQuery.length < 3) {
@@ -96,7 +132,7 @@ function App() {
     }
 
     setIsTyping(true)
-    setCategoryPage(1)
+    setSearchPage(1)
 
     const timerId = setTimeout(() => {
       searchMovie(searchQuery, 1)
@@ -104,7 +140,7 @@ function App() {
     }, 500)
 
     return () => clearTimeout(timerId)
-  }, [searchQuery])
+  }, [searchQuery, searchMovie])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -120,6 +156,23 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  useEffect(() => {
+    const handleClickOutside = e => {
+      if (
+        !e.target.closest('.search-input-wrapper') &&
+        !e.target.closest('.search-history-dropdown')
+      ) {
+        setShowHistory(false)
+      }
+    }
+
+    if (showHistory) {
+      document.addEventListener('click', handleClickOutside)
+    }
+
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [showHistory])
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -134,42 +187,41 @@ function App() {
       ? favorites
       : categoryMovies
 
-  console.log('Category:', category)
-  console.log('Favorites count:', favorites.length)
-  console.log('Movies to display:', moviesToDisplay.length)
+  const fetchCategoryMovies = useCallback(
+    async (category, page = 1) => {
+      setIsLoading(true)
+      setError(null)
 
-  const fetchCategoryMovies = async (category, page = 1) => {
-    setIsLoading(true)
-    setError(null)
+      try {
+        const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
+        const response = await fetch(url)
 
-    try {
-      const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
-      const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error('Failed to load category movies')
+        }
 
-      if (!response.ok) {
-        throw new Error('Failed to load category movies')
+        const data = await response.json()
+
+        if (page === 1) {
+          setCategoryMovies(data.results || [])
+        } else {
+          setCategoryMovies(prev => [...prev, ...(data.results || [])])
+        }
+
+        setCategoryTotalPages(data.total_pages || 1)
+
+        if (data.results.length === 0) {
+          setError('No movies found in this category')
+        }
+      } catch (err) {
+        setError(err.message)
+        setCategoryMovies([])
+      } finally {
+        setIsLoading(false)
       }
-
-      const data = await response.json()
-
-      if (page === 1) {
-        setCategoryMovies(data.results || [])
-      } else {
-        setCategoryMovies(prev => [...prev, ...(data.results || [])])
-      }
-
-      setCategoryTotalPages(data.total_pages || 1)
-
-      if (data.results.length === 0) {
-        setError('No movies found in this category')
-      }
-    } catch (err) {
-      setError(err.message)
-      setCategoryMovies([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    },
+    [API_KEY, BASE_URL]
+  )
 
   useEffect(() => {
     if (category === 'favorites') {
@@ -182,7 +234,7 @@ function App() {
     setFiltersApplied(false)
     setCategoryPage(1)
     fetchCategoryMovies(category, 1)
-  }, [category])
+  }, [category, fetchCategoryMovies])
 
   const fetchMovieDetails = async movieId => {
     try {
@@ -225,26 +277,26 @@ function App() {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [isModalOpen])
 
-  const fetchGenres = async () => {
+  const fetchGenres = useCallback(async () => {
     try {
       const url = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`
       const response = await fetch(url)
 
       if (!response.ok) {
-        throw new Error('Failde to load genres')
+        throw new Error('Failed to load genres')
       }
 
       const data = await response.json()
 
       setGenres(data.genres)
     } catch (err) {
-      console.error('Failder to fetch genres:', err)
+      console.error('Failed to fetch genres:', err)
     }
-  }
+  }, [API_KEY, BASE_URL])
 
   useEffect(() => {
     fetchGenres()
-  }, [])
+  }, [fetchGenres])
 
   const discoverMovies = async (filters, page = 1) => {
     setIsLoading(true)
@@ -300,14 +352,11 @@ function App() {
   const addToFavorites = movie => {
     if (!favorites.some(fav => fav.id === movie.id)) {
       setFavorites(prev => [...prev, movie])
-      console.log('Added to favorites:', movie)
-      console.log('All favorites:', [...favorites, movie])
     }
   }
 
   const removeFromFavorites = movieId => {
     setFavorites(prev => prev.filter(fav => fav.id !== movieId))
-    console.log('Removed from favorites:', movieId)
   }
 
   const isFavorite = movieId => {
@@ -319,13 +368,47 @@ function App() {
       <header className="header">
         <h1>Movie Search</h1>
         <form onSubmit={e => e.preventDefault()} className="search-form">
-          <input
-            type="text"
-            placeholder="Search the movie..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
+          <div className="search-input-wrapper">
+            <input
+              type="text"
+              placeholder="Search the movie..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => setShowHistory(true)}
+              onBlur={() => setTimeout(() => setShowHistory(false), 200)}
+              className="search-input"
+            />
+
+            {showHistory &&
+              searchHistory.length > 0 &&
+              searchQuery.length < 3 && (
+                <div className="search-history-dropdown">
+                  {searchHistory.map((query, index) => (
+                    <div
+                      className="history-item"
+                      key={index}
+                      onClick={() => {
+                        setShowHistory(false)
+                        setSearchQuery(query)
+                      }}
+                    >
+                      {query}
+                    </div>
+                  ))}
+
+                  <button
+                    className="clear-history-btn"
+                    onClick={() => {
+                      setSearchHistory([])
+                      setShowHistory(false)
+                    }}
+                  >
+                    Clear History
+                  </button>
+                </div>
+              )}
+          </div>
+
           <button
             type="button"
             onClick={() => setSearchQuery('')}
@@ -489,10 +572,11 @@ function App() {
               </button>
             </div>
 
-            {(filtersApplied && selectedGenres.length > 0) ||
-              yearFrom ||
-              yearTo ||
-              (minRating > 0 && (
+            {filtersApplied &&
+              (selectedGenres.length > 0 ||
+                yearFrom ||
+                yearTo ||
+                minRating > 0) && (
                 <div className="active-filters">
                   <strong>Active filters:</strong>
 
@@ -521,7 +605,7 @@ function App() {
                     </span>
                   )}
                 </div>
-              ))}
+              )}
           </div>
         </div>
       )}
