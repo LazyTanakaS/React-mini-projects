@@ -11,6 +11,7 @@ function SearchBar({
 }) {
   const [showHistory, setShowHistory] = useState(false)
 
+  // Close history dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = e => {
       if (

@@ -3,39 +3,56 @@ import './App.css'
 import MovieCard from './components/MovieCard/MovieCard'
 import SearchBar from './components/SearchBar/SearchBar'
 import CategoryTabs from './components/CategoryTabs/CategoryTabs'
+import MovieModal from './components/MovieModal/MovieModal'
+import Filters from './components/Filtres/Filters'
 
 function App() {
+  // API configuration
   const API_KEY = import.meta.env.VITE_TMDB_API_KEY
   const BASE_URL = 'https://api.themoviedb.org/3'
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 
+  // UI state (grouped)
+  const [uiState, setUiState] = useState({
+    isLoading: false,
+    error: null,
+    isTyping: false,
+    showScrollButton: false,
+  })
+
+  // Search state
   const [searchQuery, setSearchQuery] = useState('')
   const [movies, setMovies] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [isTyping, setIsTyping] = useState(false)
-  const [showScrollButton, setShowScrollButton] = useState(false)
 
+  // Category state
   const [category, setCategory] = useState('popular')
   const [categoryMovies, setCategoryMovies] = useState([])
   const [filtersApplied, setFiltersApplied] = useState(false)
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedMovie, setSelectedMovie] = useState(null)
+  // Modal state (grouped)
+  const [modal, setModal] = useState({
+    isOpen: false,
+    selectedMovie: null,
+  })
 
-  const [searchPage, setSearchPage] = useState(1)
-  const [categoryPage, setCategoryPage] = useState(1)
+  // Pagination state (grouped)
+  const [pagination, setPagination] = useState({
+    searchPage: 1,
+    categoryPage: 1,
+    searchTotalPages: 1,
+    categoryTotalPages: 1,
+  })
 
-  const [searchTotalPages, setSearchTotalPages] = useState(1)
-  const [categoryTotalPages, setCategoryTotalPages] = useState(1)
+  // Filter state (grouped)
+  const [filters, setFilters] = useState({
+    genres: [],
+    selectedGenres: [],
+    yearFrom: '',
+    yearTo: '',
+    minRating: 0,
+  })
 
-  const [genres, setGenres] = useState([])
-  const [selectedGenres, setSelectedGenres] = useState([])
-  const [yearFrom, setYearFrom] = useState('')
-  const [yearTo, setYearTo] = useState('')
-  const [minRating, setMinRating] = useState(0)
-
-  // LOCAL STORAGE - Favorites
+  // Favorites (localStorage)
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('favorites')
 
@@ -50,7 +67,7 @@ function App() {
     return []
   })
 
-  // SEARCH HISTORY
+  // Search history (localStorage)
   const [searchHistory, setSearchHistory] = useState(() => {
     const search = localStorage.getItem('searchHistory')
 
@@ -65,10 +82,14 @@ function App() {
     return []
   })
 
+  // Save search history to localStorage
   useEffect(() => {
     localStorage.setItem('searchHistory', JSON.stringify(searchHistory))
   }, [searchHistory])
 
+  /**
+   * Add search query to history (max 5 items)
+   */
   const addToSearchHistory = query => {
     if (!query || query.trim() === '') return
 
@@ -78,15 +99,20 @@ function App() {
     })
   }
 
+  /**
+   * Search movies by query with pagination
+   */
   const searchMovie = useCallback(
     async (query, page = 1) => {
       if (query === '') {
-        setError('Please enter the name of the movie')
+        setUiState(prev => ({
+          ...prev,
+          error: 'Please enter the name of the movie',
+        }))
         return
       }
 
-      setIsLoading(true)
-      setError(null)
+      setUiState(prev => ({ ...prev, isLoading: true, error: null }))
 
       try {
         const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&page=${page}&query=${encodeURIComponent(
@@ -109,47 +135,50 @@ function App() {
           setMovies(prev => [...prev, ...(data.results || [])])
         }
 
-        setSearchTotalPages(data.total_pages || 1)
+        setPagination(prev => ({
+          ...prev,
+          searchTotalPages: data.total_pages || 1,
+        }))
 
         if (data.results.length === 0) {
-          setError('No movie found')
+          setUiState(prev => ({ ...prev, error: 'No movie found' }))
         }
       } catch (err) {
-        setError(err.message)
+        setUiState(prev => ({ ...prev, error: err.message }))
         setMovies([])
       } finally {
-        setIsLoading(false)
+        setUiState(prev => ({ ...prev, isLoading: false }))
       }
     },
     [API_KEY, BASE_URL]
   )
 
+  // Debounced search effect (500ms delay)
   useEffect(() => {
     if (!searchQuery || searchQuery.length < 3) {
       setMovies([])
-      setError(null)
-      setIsTyping(false)
+      setUiState(prev => ({ ...prev, error: null, isTyping: false }))
       return
     }
 
-    setIsTyping(true)
-    setSearchPage(1)
+    setUiState(prev => ({ ...prev, isTyping: true }))
+    setPagination(prev => ({ ...prev, searchPage: 1 }))
 
     const timerId = setTimeout(() => {
       searchMovie(searchQuery, 1)
-      setIsTyping(false)
+      setUiState(prev => ({ ...prev, isTyping: false }))
     }, 500)
 
     return () => clearTimeout(timerId)
   }, [searchQuery, searchMovie])
 
+  // Handle scroll button visibility
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowScrollButton(true)
-      } else {
-        setShowScrollButton(false)
-      }
+      setUiState(prev => ({
+        ...prev,
+        showScrollButton: window.scrollY > 300,
+      }))
     }
 
     window.addEventListener('scroll', handleScroll)
@@ -157,6 +186,9 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  /**
+   * Scroll to top of the page smoothly
+   */
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -164,6 +196,7 @@ function App() {
     })
   }
 
+  // Determine which movies to display based on category
   const moviesToDisplay =
     searchQuery.length >= 3
       ? movies
@@ -171,10 +204,12 @@ function App() {
       ? favorites
       : categoryMovies
 
+  /**
+   * Fetch movies by category (popular, top_rated, now_playing)
+   */
   const fetchCategoryMovies = useCallback(
     async (category, page = 1) => {
-      setIsLoading(true)
-      setError(null)
+      setUiState(prev => ({ ...prev, isLoading: true, error: null }))
 
       try {
         const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
@@ -192,34 +227,44 @@ function App() {
           setCategoryMovies(prev => [...prev, ...(data.results || [])])
         }
 
-        setCategoryTotalPages(data.total_pages || 1)
+        setPagination(prev => ({
+          ...prev,
+          categoryTotalPages: data.total_pages || 1,
+        }))
 
         if (data.results.length === 0) {
-          setError('No movies found in this category')
+          setUiState(prev => ({
+            ...prev,
+            error: 'No movies found in this category',
+          }))
         }
       } catch (err) {
-        setError(err.message)
+        setUiState(prev => ({ ...prev, error: err.message }))
         setCategoryMovies([])
       } finally {
-        setIsLoading(false)
+        setUiState(prev => ({ ...prev, isLoading: false }))
       }
     },
     [API_KEY, BASE_URL]
   )
 
+  // Fetch category movies when category changes
   useEffect(() => {
     if (category === 'favorites') {
-      setSelectedGenres([])
+      setFilters(prev => ({ ...prev, selectedGenres: [] }))
       setFiltersApplied(false)
       return
     }
 
-    setSelectedGenres([])
+    setFilters(prev => ({ ...prev, selectedGenres: [] }))
     setFiltersApplied(false)
-    setCategoryPage(1)
+    setPagination(prev => ({ ...prev, categoryPage: 1 }))
     fetchCategoryMovies(category, 1)
   }, [category, fetchCategoryMovies])
 
+  /**
+   * Fetch detailed information about a specific movie
+   */
   const fetchMovieDetails = async movieId => {
     try {
       const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
@@ -230,37 +275,16 @@ function App() {
       }
 
       const data = await response.json()
-      setSelectedMovie(data)
-      setIsModalOpen(true)
+      setModal({ isOpen: true, selectedMovie: data })
     } catch (err) {
       console.error('Error fetching movie details:', err)
-      setError(err.message)
+      setUiState(prev => ({ ...prev, error: err.message }))
     }
   }
 
-  useEffect(() => {
-    if (isModalOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isModalOpen])
-
-  useEffect(() => {
-    const handleEscape = e => {
-      if (e.key === 'Escape' && isModalOpen) {
-        setIsModalOpen(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [isModalOpen])
-
+  /**
+   * Fetch available movie genres from TMDB API
+   */
   const fetchGenres = useCallback(async () => {
     try {
       const url = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`
@@ -272,37 +296,40 @@ function App() {
 
       const data = await response.json()
 
-      setGenres(data.genres)
+      setFilters(prev => ({ ...prev, genres: data.genres }))
     } catch (err) {
       console.error('Failed to fetch genres:', err)
     }
   }, [API_KEY, BASE_URL])
 
+  // Fetch genres on mount
   useEffect(() => {
     fetchGenres()
   }, [fetchGenres])
 
-  const discoverMovies = async (filters, page = 1) => {
-    setIsLoading(true)
-    setError(null)
+  /**
+   * Discover movies with applied filters (genres, year, rating)
+   */
+  const discoverMovies = async (filterParams, page = 1) => {
+    setUiState(prev => ({ ...prev, isLoading: true, error: null }))
 
     try {
       let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&page=${page}`
 
-      if (filters.genres && filters.genres.length > 0) {
-        url += `&with_genres=${filters.genres.join(',')}`
+      if (filterParams.genres && filterParams.genres.length > 0) {
+        url += `&with_genres=${filterParams.genres.join(',')}`
       }
 
-      if (filters.yearFrom) {
-        url += `&primary_release_date.gte=${filters.yearFrom}-01-01`
+      if (filterParams.yearFrom) {
+        url += `&primary_release_date.gte=${filterParams.yearFrom}-01-01`
       }
 
-      if (filters.yearTo) {
-        url += `&primary_release_date.lte=${filters.yearTo}-12-31`
+      if (filterParams.yearTo) {
+        url += `&primary_release_date.lte=${filterParams.yearTo}-12-31`
       }
 
-      if (filters.minRating > 0) {
-        url += `&vote_average.gte=${filters.minRating}`
+      if (filterParams.minRating > 0) {
+        url += `&vote_average.gte=${filterParams.minRating}`
       }
 
       const response = await fetch(url)
@@ -319,35 +346,51 @@ function App() {
         setCategoryMovies(prev => [...prev, ...(data.results || [])])
       }
 
-      setCategoryTotalPages(data.total_pages || 1)
+      setPagination(prev => ({
+        ...prev,
+        categoryTotalPages: data.total_pages || 1,
+      }))
       setFiltersApplied(true)
     } catch (err) {
-      setError(err.message)
+      setUiState(prev => ({ ...prev, error: err.message }))
       setCategoryMovies([])
     } finally {
-      setIsLoading(false)
+      setUiState(prev => ({ ...prev, isLoading: false }))
     }
   }
 
+  // Save favorites to localStorage
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites))
   }, [favorites])
 
+  /**
+   * Add movie to favorites list
+   */
   const addToFavorites = movie => {
     if (!favorites.some(fav => fav.id === movie.id)) {
       setFavorites(prev => [...prev, movie])
     }
   }
 
+  /**
+   * Remove movie from favorites list
+   */
   const removeFromFavorites = movieId => {
     setFavorites(prev => prev.filter(fav => fav.id !== movieId))
   }
 
+  /**
+   * Check if movie is in favorites
+   */
   const isFavorite = movieId => {
     return favorites.some(fav => fav.id === movieId)
   }
 
-  // Callback functions for SearchBar
+  // Event handlers (callbacks for child components)
+
+  // Event handlers (callbacks for child components)
+
   const handleSearchChange = value => {
     setSearchQuery(value)
   }
@@ -368,6 +411,52 @@ function App() {
     setCategory(newCategory)
   }
 
+  const handleCloseModal = () => {
+    setModal(prev => ({ ...prev, isOpen: false }))
+  }
+
+  const handleGenresChange = newGenres => {
+    setFilters(prev => ({ ...prev, selectedGenres: newGenres }))
+  }
+
+  const handleYearFromChange = value => {
+    setFilters(prev => ({ ...prev, yearFrom: value }))
+  }
+
+  const handleYearToChange = value => {
+    setFilters(prev => ({ ...prev, yearTo: value }))
+  }
+
+  const handleMinRatingChange = value => {
+    setFilters(prev => ({ ...prev, minRating: value }))
+  }
+
+  const handleApplyFilters = () => {
+    setPagination(prev => ({ ...prev, categoryPage: 1 }))
+    discoverMovies(
+      {
+        genres: filters.selectedGenres,
+        yearFrom: filters.yearFrom,
+        yearTo: filters.yearTo,
+        minRating: filters.minRating,
+      },
+      1
+    )
+  }
+
+  const handleResetFilters = () => {
+    setFilters(prev => ({
+      ...prev,
+      selectedGenres: [],
+      yearFrom: '',
+      yearTo: '',
+      minRating: 0,
+    }))
+    setFiltersApplied(false)
+    setPagination(prev => ({ ...prev, categoryPage: 1 }))
+    fetchCategoryMovies(category, 1)
+  }
+
   return (
     <div className="app">
       <SearchBar
@@ -383,9 +472,9 @@ function App() {
         <p className="search-hint">Type at least 3 characters to search...</p>
       )}
 
-      {isTyping && <p className="search-status">Searching...</p>}
+      {uiState.isTyping && <p className="search-status">Searching...</p>}
 
-      {!isLoading && !error && moviesToDisplay.length > 0 && (
+      {!uiState.isLoading && !uiState.error && moviesToDisplay.length > 0 && (
         <div className="results-counter">
           <p>
             Found <span className="count">{moviesToDisplay.length}</span> movies
@@ -400,172 +489,48 @@ function App() {
       />
 
       {searchQuery.length < 3 && category !== 'favorites' && (
-        <div className="filters-section">
-          <h3>Filters</h3>
-
-          <div className="filter-group">
-            <label>Genres:</label>
-            <div className="genres-list">
-              {genres.map(genre => (
-                <div className="genres-checkbox" key={genre.id}>
-                  <input
-                    type="checkbox"
-                    id={`genre-${genre.id}`}
-                    checked={selectedGenres.includes(genre.id)}
-                    onChange={() => {
-                      setSelectedGenres(prev =>
-                        prev.includes(genre.id)
-                          ? prev.filter(id => id !== genre.id)
-                          : [...prev, genre.id]
-                      )
-                    }}
-                  />
-                  <label htmlFor={`genre-${genre.id}`}>{genre.name}</label>
-                </div>
-              ))}
-            </div>
-
-            <div className="filter-group">
-              <label>Release Year:</label>
-              <div className="year-input">
-                <input
-                  type="number"
-                  placeholder="From (e.g. 2000)"
-                  value={yearFrom}
-                  onChange={e => setYearFrom(e.target.value)}
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  className="year-input"
-                />
-                <span>-</span>
-                <input
-                  type="number"
-                  placeholder="To (e.g. 2024"
-                  value={yearTo}
-                  onChange={e => setYearTo(e.target.value)}
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  className="year-input"
-                />
-              </div>
-            </div>
-
-            <div className="filter-group">
-              <label>Minimum Rating: {minRating.toFixed(1)} ⭐</label>
-              <input
-                type="range"
-                min="0"
-                max="10"
-                step={'0.5'}
-                value={minRating}
-                onChange={e => setMinRating(parseFloat(e.target.value))}
-                className="rating-slider"
-              />
-            </div>
-
-            <div className="filter-action">
-              <button
-                className="apply-filter-button"
-                onClick={() => {
-                  setCategoryPage(1)
-                  discoverMovies(
-                    {
-                      genres: selectedGenres,
-                      yearFrom,
-                      yearTo,
-                      minRating,
-                    },
-                    1
-                  )
-                }}
-                disabled={
-                  selectedGenres.length === 0 &&
-                  !yearFrom &&
-                  !yearTo &&
-                  minRating === 0
-                }
-              >
-                Apply
-              </button>
-
-              <button
-                className="reset-filter-button"
-                onClick={() => {
-                  setSelectedGenres([])
-                  setYearFrom('')
-                  setYearTo('')
-                  setMinRating(0)
-                  setFiltersApplied(false)
-                  setCategoryPage(1)
-                  fetchCategoryMovies(category, 1)
-                }}
-              >
-                Reset
-              </button>
-            </div>
-
-            {filtersApplied &&
-              (selectedGenres.length > 0 ||
-                yearFrom ||
-                yearTo ||
-                minRating > 0) && (
-                <div className="active-filters">
-                  <strong>Active filters:</strong>
-
-                  {selectedGenres.length > 0 && (
-                    <span>
-                      Genres:{' '}
-                      {selectedGenres
-                        .map(id => {
-                          const genre = genres.find(g => g.id === id)
-                          return genre ? genre.name : ''
-                        })
-                        .filter(Boolean)
-                        .join(', ')}
-                    </span>
-                  )}
-
-                  {(yearFrom || yearTo) && (
-                    <span>
-                      {' • '}Year: {yearFrom || '?'} - {yearTo || '?'}
-                    </span>
-                  )}
-
-                  {minRating > 0 && (
-                    <span>
-                      {' • '}Rating: ≥ {minRating.toFixed(1)}⭐
-                    </span>
-                  )}
-                </div>
-              )}
-          </div>
-        </div>
+        <Filters
+          genres={filters.genres}
+          selectedGenres={filters.selectedGenres}
+          onGenresChange={handleGenresChange}
+          yearFrom={filters.yearFrom}
+          yearTo={filters.yearTo}
+          onYearFromChange={handleYearFromChange}
+          onYearToChange={handleYearToChange}
+          minRating={filters.minRating}
+          onMinRatingChange={handleMinRatingChange}
+          onApplyFilters={handleApplyFilters}
+          onResetFilters={handleResetFilters}
+          filtersApplied={filtersApplied}
+        />
       )}
 
       <main className="main">
-        {isLoading && (
+        {uiState.isLoading && (
           <div className="loader">
             <p>Loading...</p>
           </div>
         )}
 
-        {error && (
+        {uiState.error && (
           <div className="fails">
-            <p>{error}</p>
+            <p>{uiState.error}</p>
           </div>
         )}
 
-        {!isLoading && !error && moviesToDisplay.length === 0 && (
-          <div className="empty-state">
-            <p>
-              {category === 'favorites'
-                ? 'No favorites yet. Add movies by clicking the ❤️ button!'
-                : 'Search for your favorite movies'}
-            </p>
-          </div>
-        )}
+        {!uiState.isLoading &&
+          !uiState.error &&
+          moviesToDisplay.length === 0 && (
+            <div className="empty-state">
+              <p>
+                {category === 'favorites'
+                  ? 'No favorites yet. Add movies by clicking the ❤️ button!'
+                  : 'Search for your favorite movies'}
+              </p>
+            </div>
+          )}
 
-        {!isLoading && !error && moviesToDisplay.length > 0 && (
+        {!uiState.isLoading && !uiState.error && moviesToDisplay.length > 0 && (
           <>
             <div className="movies-grid">
               {moviesToDisplay.map(movie => (
@@ -585,34 +550,46 @@ function App() {
 
             {category !== 'favorites' &&
               (searchQuery.length >= 3
-                ? searchPage < searchTotalPages
-                : categoryPage < categoryTotalPages) && (
+                ? pagination.searchPage < pagination.searchTotalPages
+                : pagination.categoryPage < pagination.categoryTotalPages) && (
                 <div className="load-more-container">
                   <button
                     onClick={() => {
                       if (searchQuery.length >= 3) {
-                        setSearchPage(prev => prev + 1)
-                        searchMovie(searchQuery, searchPage + 1)
+                        setPagination(prev => ({
+                          ...prev,
+                          searchPage: prev.searchPage + 1,
+                        }))
+                        searchMovie(searchQuery, pagination.searchPage + 1)
                       } else if (filtersApplied) {
-                        setCategoryPage(prev => prev + 1)
+                        setPagination(prev => ({
+                          ...prev,
+                          categoryPage: prev.categoryPage + 1,
+                        }))
                         discoverMovies(
                           {
-                            genres: selectedGenres,
-                            yearFrom,
-                            yearTo,
-                            minRating,
+                            genres: filters.selectedGenres,
+                            yearFrom: filters.yearFrom,
+                            yearTo: filters.yearTo,
+                            minRating: filters.minRating,
                           },
-                          categoryPage + 1
+                          pagination.categoryPage + 1
                         )
                       } else {
-                        setCategoryPage(prev => prev + 1)
-                        fetchCategoryMovies(category, categoryPage + 1)
+                        setPagination(prev => ({
+                          ...prev,
+                          categoryPage: prev.categoryPage + 1,
+                        }))
+                        fetchCategoryMovies(
+                          category,
+                          pagination.categoryPage + 1
+                        )
                       }
                     }}
                     className="load-more-button"
-                    disabled={isLoading}
+                    disabled={uiState.isLoading}
                   >
-                    {isLoading ? 'Loading...' : 'Load More Movies'}
+                    {uiState.isLoading ? 'Loading...' : 'Load More Movies'}
                   </button>
                 </div>
               )}
@@ -620,81 +597,18 @@ function App() {
         )}
       </main>
 
-      {showScrollButton && (
+      {uiState.showScrollButton && (
         <button onClick={scrollToTop} className="scroll-to-top">
           ↑
         </button>
       )}
 
-      {/* Modal */}
-      {isModalOpen && selectedMovie && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <button
-              className="modal-close"
-              onClick={() => setIsModalOpen(false)}
-            >
-              ✕
-            </button>
-
-            <div className="modal-header">
-              {selectedMovie.backdrop_path && (
-                <img
-                  src={`${IMAGE_BASE_URL}${selectedMovie.backdrop_path}`}
-                  alt={selectedMovie.title}
-                  className="modal-backdrop"
-                />
-              )}
-              <h2 className="modal-title">{selectedMovie.title}</h2>
-            </div>
-
-            <div className="modal-body">
-              <div className="modal-info">
-                <p>
-                  <strong>Release Date:</strong>{' '}
-                  {selectedMovie.release_date || 'N/A'}
-                </p>
-                <p>
-                  <strong>Rating</strong>⭐{' '}
-                  {selectedMovie.vote_average
-                    ? selectedMovie.vote_average.toFixed(1)
-                    : 'N/A'}{' '}
-                  / 10
-                </p>
-                <p>
-                  <strong>Runtime</strong>{' '}
-                  {selectedMovie.runtime
-                    ? `${selectedMovie.runtime} min`
-                    : 'N/A'}
-                </p>
-                {selectedMovie.genres && selectedMovie.genres.length > 0 && (
-                  <p>
-                    <strong>Genres:</strong>{' '}
-                    {selectedMovie.genres.map(g => g.name).join(', ')}
-                  </p>
-                )}
-                {selectedMovie.revenue > 0 && (
-                  <p>
-                    <strong>Revenue</strong> $
-                    {selectedMovie.revenue.toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              <div className="modal-overview">
-                <h3>Overview</h3>
-                <p>{selectedMovie.overview || 'No overview available'}</p>
-              </div>
-
-              {selectedMovie.tagline && (
-                <div className="modal-tagline">
-                  <em>"{selectedMovie.tagline}"</em>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <MovieModal
+        isOpen={modal.isOpen}
+        movie={modal.selectedMovie}
+        onClose={handleCloseModal}
+        imageBaseUrl={IMAGE_BASE_URL}
+      />
     </div>
   )
 }

@@ -2,7 +2,7 @@ import React from 'react'
 import './MovieCard.css'
 
 function MovieCard({ movie, onCardClick, onFavoriteClick, isFavorite }) {
-  const { title, release_date, poster_path, vote_average, id } = movie
+  const { title, release_date, poster_path, vote_average } = movie
 
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 
