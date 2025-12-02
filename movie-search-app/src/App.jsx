@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import MovieCard from './components/MovieCard/MovieCard'
 import SearchBar from './components/SearchBar/SearchBar'
+import CategoryTabs from './components/CategoryTabs/CategoryTabs'
 
 function App() {
   const API_KEY = import.meta.env.VITE_TMDB_API_KEY
@@ -363,6 +364,10 @@ function App() {
     setSearchQuery('')
   }
 
+  const handleCategoryChange = newCategory => {
+    setCategory(newCategory)
+  }
+
   return (
     <div className="app">
       <SearchBar
@@ -388,39 +393,11 @@ function App() {
         </div>
       )}
 
-      <div className="category-tabs">
-        <button
-          type="button"
-          className={category === 'popular' ? 'tab active' : 'tab'}
-          onClick={() => setCategory('popular')}
-        >
-          Popular
-        </button>
-
-        <button
-          type="button"
-          className={category === 'top_rated' ? 'tab active' : 'tab'}
-          onClick={() => setCategory('top_rated')}
-        >
-          Top Rated
-        </button>
-
-        <button
-          type="button"
-          className={category === 'now_playing' ? 'tab active' : 'tab'}
-          onClick={() => setCategory('now_playing')}
-        >
-          Now playing
-        </button>
-
-        <button
-          type="button"
-          className={category === 'favorites' ? 'tab active' : 'tab'}
-          onClick={() => setCategory('favorites')}
-        >
-          ❤️ Favorites ({favorites.length})
-        </button>
-      </div>
+      <CategoryTabs
+        activeCategory={category}
+        onCategoryChange={handleCategoryChange}
+        favoritesCount={favorites.length}
+      />
 
       {searchQuery.length < 3 && category !== 'favorites' && (
         <div className="filters-section">
