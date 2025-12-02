@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import MovieCard from './components/MovieCard/MovieCard'
+import SearchBar from './components/SearchBar/SearchBar'
 
 function App() {
   const API_KEY = import.meta.env.VITE_TMDB_API_KEY
@@ -32,8 +33,6 @@ function App() {
   const [yearFrom, setYearFrom] = useState('')
   const [yearTo, setYearTo] = useState('')
   const [minRating, setMinRating] = useState(0)
-
-  const [showHistory, setShowHistory] = useState(false)
 
   // LOCAL STORAGE - Favorites
   const [favorites, setFavorites] = useState(() => {
@@ -156,23 +155,6 @@ function App() {
 
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
-  useEffect(() => {
-    const handleClickOutside = e => {
-      if (
-        !e.target.closest('.search-input-wrapper') &&
-        !e.target.closest('.search-history-dropdown')
-      ) {
-        setShowHistory(false)
-      }
-    }
-
-    if (showHistory) {
-      document.addEventListener('click', handleClickOutside)
-    }
-
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [showHistory])
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -364,61 +346,33 @@ function App() {
     return favorites.some(fav => fav.id === movieId)
   }
 
+  // Callback functions for SearchBar
+  const handleSearchChange = value => {
+    setSearchQuery(value)
+  }
+
+  const handleClearHistory = () => {
+    setSearchHistory([])
+  }
+
+  const handleSelectHistory = query => {
+    setSearchQuery(query)
+  }
+
+  const handleClearSearch = () => {
+    setSearchQuery('')
+  }
+
   return (
     <div className="app">
-      <header className="header">
-        <h1>Movie Search</h1>
-        <form onSubmit={e => e.preventDefault()} className="search-form">
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              placeholder="Search the movie..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onFocus={() => setShowHistory(true)}
-              onBlur={() => setTimeout(() => setShowHistory(false), 200)}
-              className="search-input"
-            />
-
-            {showHistory &&
-              searchHistory.length > 0 &&
-              searchQuery.length < 3 && (
-                <div className="search-history-dropdown">
-                  {searchHistory.map((query, index) => (
-                    <div
-                      className="history-item"
-                      key={index}
-                      onClick={() => {
-                        setShowHistory(false)
-                        setSearchQuery(query)
-                      }}
-                    >
-                      {query}
-                    </div>
-                  ))}
-
-                  <button
-                    className="clear-history-btn"
-                    onClick={() => {
-                      setSearchHistory([])
-                      setShowHistory(false)
-                    }}
-                  >
-                    Clear History
-                  </button>
-                </div>
-              )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setSearchQuery('')}
-            className="clear-button"
-          >
-            ✕
-          </button>
-        </form>
-      </header>
+      <SearchBar
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        searchHistory={searchHistory}
+        onClearHistory={handleClearHistory}
+        onSelectHistory={handleSelectHistory}
+        onClearSearch={handleClearSearch}
+      />
 
       {searchQuery && searchQuery.length < 3 && (
         <p className="search-hint">Type at least 3 characters to search...</p>
