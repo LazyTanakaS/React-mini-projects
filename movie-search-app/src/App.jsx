@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import './App.css'
+import MovieCard from './components/MovieCard/MovieCard'
 
 function App() {
   const API_KEY = import.meta.env.VITE_TMDB_API_KEY
@@ -637,52 +638,17 @@ function App() {
           <>
             <div className="movies-grid">
               {moviesToDisplay.map(movie => (
-                <div
-                  className="movie-card"
+                <MovieCard
                   key={movie.id}
-                  onClick={() => fetchMovieDetails(movie.id)}
-                >
-                  <button
-                    className={`favorite-btn ${
-                      isFavorite(movie.id) ? 'active' : ''
-                    }`}
-                    onClick={e => {
-                      e.stopPropagation()
-                      if (isFavorite(movie.id)) {
-                        removeFromFavorites(movie.id)
-                      } else {
-                        addToFavorites(movie)
-                      }
-                    }}
-                  >
-                    {isFavorite(movie.id) ? '❤️' : '🤍'}
-                  </button>
-
-                  <img
-                    src={
-                      movie.poster_path
-                        ? `${IMAGE_BASE_URL}${movie.poster_path}`
-                        : 'https://via.placeholder.com/500x750?text=No+Image'
-                    }
-                    alt={movie.title}
-                    className="movie-poster"
-                  />
-
-                  <div className="movie-info">
-                    <h3 className="movie-title">{movie.title}</h3>
-                    <p className="movie-release">
-                      {movie.release_date
-                        ? movie.release_date.split('-')[0]
-                        : 'N/A'}
-                    </p>
-                    <p className="movie-rating">
-                      ⭐{' '}
-                      {movie.vote_average
-                        ? movie.vote_average.toFixed(1)
-                        : 'N/A'}
-                    </p>
-                  </div>
-                </div>
+                  movie={movie}
+                  onCardClick={() => fetchMovieDetails(movie.id)}
+                  onFavoriteClick={
+                    isFavorite(movie.id)
+                      ? () => removeFromFavorites(movie.id)
+                      : () => addToFavorites(movie)
+                  }
+                  isFavorite={isFavorite(movie.id)}
+                />
               ))}
             </div>
 
