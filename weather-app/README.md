@@ -79,6 +79,14 @@ npm install react-icons
 npm run dev
 ```
 
-## API Setup
+## Environment Variables
 
-Get free API key from [OpenWeatherMap](https://openweathermap.org/api) and replace `API_KEY` in `App.jsx`.
+Create `.env` file in the root of weather-app:
+
+```
+VITE_OPENWEATHER_API_KEY=your_api_key_here
+```
+
+Get your free API key from [OpenWeatherMap](https://openweathermap.org/api).
+
+See `.env.example` for reference.

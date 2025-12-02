@@ -48,6 +48,8 @@ jobs:
           cp -r dist ../dist/calculator-app
 
       - name: Build Weather App
+        env:
+          VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY }}
         run: |
           cd weather-app
           npm ci
