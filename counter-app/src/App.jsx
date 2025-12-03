@@ -6,20 +6,23 @@ const App = () => {
   const [history, setHistory] = useState([])
 
   const handleIncrement = () => {
-    setCounter(counter + 1)
-    setHistory([...history, '+1'].slice(-5))
+    setCounter(prev => prev + 1)
+    setHistory(prev => [...prev, '+1'].slice(-5))
   }
 
   const handleDecrement = () => {
-    if (counter > 0) {
-      setCounter(counter - 1)
-      setHistory([...history, '-1'].slice(-5))
-    }
+    setCounter(prev => {
+      if (prev > 0) {
+        setHistory(prevHistory => [...prevHistory, '-1'].slice(-5))
+        return prev - 1
+      }
+      return prev
+    })
   }
 
   const handleReset = () => {
     setCounter(0)
-    setHistory([...history, 'RESET'].slice(-5))
+    setHistory(prev => [...prev, 'RESET'].slice(-5))
   }
 
   return (
@@ -37,7 +40,7 @@ const App = () => {
         <h3>History</h3>
         <ul>
           {history.map((action, index) => (
-            <li key={index}>{action}</li>
+            <li key={`${action}-${index}`}>{action}</li>
           ))}
         </ul>
       </div>
