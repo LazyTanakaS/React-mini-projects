@@ -1,183 +1,166 @@
-# React Mini Projects
+# 🎬 React Mini Projects
 
-A collection of practice projects built while learning React fundamentals.
+A collection of React applications demonstrating modern frontend development practices.
 
-## Purpose
+![React](https://img.shields.io/badge/React-18.x-61DAFB?style=flat&logo=react)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=flat&logo=javascript)
+![CSS3](https://img.shields.io/badge/CSS3-Styled-1572B6?style=flat&logo=css3)
+![Vite](https://img.shields.io/badge/Vite-Build-646CFF?style=flat&logo=vite)
 
-These projects are created as part of my journey to master React and secure a Junior Frontend Developer position. Each project focuses on specific React concepts and patterns commonly used in real-world applications.
+## 🚀 Live Demos
 
-## Projects
-
-### 1. Counter App
-
-**Live Demo:** [View Counter App](https://lazytanakas.github.io/React-mini-projects/counter-app/)
-
-A simple counter application with history tracking.
-
-**Concepts practiced:**
-
-- useState with numbers and arrays
-- Event handlers
-- Array manipulation (spread operator, slice)
-- Conditional rendering
-- List rendering with map()
-
-**Features:**
-
-- Increment/Decrement buttons
-- Reset functionality
-- History of last 5 actions
-- Prevents negative values
+| Project         | Demo                                                                             | Description                               |
+| --------------- | -------------------------------------------------------------------------------- | ----------------------------------------- |
+| 🎬 Movie Search | [Live Demo](https://lazytanakas.github.io/React-mini-projects/movie-search-app/) | Full-featured movie database with filters |
+| 🌤️ Weather App  | [Live Demo](https://lazytanakas.github.io/React-mini-projects/weather-app/)      | Real-time weather with search history     |
+| ✅ Todo List    | [Live Demo](https://lazytanakas.github.io/React-mini-projects/todo-list-app/)    | Task manager with priorities              |
+| 🧮 Calculator   | [Live Demo](https://lazytanakas.github.io/React-mini-projects/calculator-app/)   | Functional calculator                     |
+| 🔢 Counter      | [Live Demo](https://lazytanakas.github.io/React-mini-projects/counter-app/)      | Counter with history                      |
 
 ---
 
-### 2. Todo List
+## 🎬 Movie Search App
 
-**Live Demo:** [View Todo List](https://lazytanakas.github.io/React-mini-projects/todo-list-app/)
+**The most complex project** — a Netflix-style movie search application.
 
-A full-featured todo list application with advanced functionality.
+### Features
 
-**Concepts practiced:**
+- 🔍 **Debounced search** (500ms delay to reduce API calls)
+- 📂 **Category browsing** — Popular, Top Rated, Now Playing
+- 🎛️ **Advanced filters** — by genre, year range, minimum rating
+- ❤️ **Favorites** — save movies to localStorage
+- 📜 **Search history** — quick access to recent searches
+- 📄 **Pagination** — "Load More" for infinite scroll
+- 🎭 **Movie details modal** — full info with backdrop image
+- ⌨️ **Keyboard support** — ESC to close modal
 
-- Multiple useState hooks
-- useEffect for side effects
-- localStorage for data persistence
-- Controlled inputs
-- Conditional rendering with ternary operators
-- Array methods (filter, map, sort)
-- Inline styles and dynamic styling
+### Architecture
 
-**Features:**
+```
+src/
+├── components/
+│   ├── MovieCard/       # Individual movie card
+│   ├── SearchBar/       # Search input with history dropdown
+│   ├── CategoryTabs/    # Navigation tabs
+│   ├── MovieModal/      # Details popup
+│   └── Filters/         # Genre, year, rating filters
+├── App.jsx              # Main container with state management
+└── App.css              # Netflix-inspired styling
+```
 
-- Add, edit, and delete tasks
-- Mark tasks as completed with checkbox
-- Three filter modes: All, Active, Completed
-- Priority levels: Low, Medium, High
-- Color-coded priority indicators
-- Sort by priority
-- Enter key to add tasks
-- Clear all tasks
-- Task counter
-- Data persists after page reload
+### Technical Highlights
 
-**Technical highlights:**
+- **Component-based architecture** — separated concerns, reusable components
+- **Grouped state management** — related states combined into objects
+- **Universal fetch function** — reduces code duplication
+- **Constants for configuration** — no magic numbers
+- **useCallback optimization** — prevents unnecessary re-renders
+- **Accessibility** — aria-labels, keyboard navigation
 
-- Lazy initial state for localStorage
-- Separate state management for edit mode
-- Helper functions for filtering and sorting
-- Dynamic color assignment based on priority
+### Tech Stack
 
----
-
-### 3. Calculator
-
-**Live Demo:** [View Calculator](https://lazytanakas.github.io/React-mini-projects/calculator-app/)
-
-A fully functional calculator with standard and percentage operations.
-
-**Concepts practiced:**
-
-- Multiple useState for state management
-- Event handling with parameters
-- String manipulation (replace, slice, includes)
-- Type conversion (Number, String)
-- Conditional logic with if/else
-- Error handling (division by zero)
-
-**Features:**
-
-- Basic arithmetic operations (+, -, \*, /)
-- Decimal number support with comma separator
-- Percentage calculations (both standalone and in context)
-- Backspace to delete last character
-- All Clear (AC) button
-- Display shows full operation (e.g., "52 + 23")
-- European number format (comma as decimal separator)
-- Error message for division by zero
-
-**Technical highlights:**
-
-- Smart number concatenation vs. replacement logic
-- Complex percentage logic: 50% → 0,5 and 200 + 10% → 220
-- String parsing to extract operands from display
-- Automatic conversion between dots and commas for calculations
+`React 18` `Hooks (useState, useEffect, useCallback)` `TMDb API` `localStorage` `CSS Variables`
 
 ---
 
-### 4. Weather App
+## 🌤️ Weather App
 
-**Live Demo:** [View Weather App](https://lazytanakas.github.io/React-mini-projects/weather-app/)
+Real-time weather data with beautiful UI and theme switching.
 
-A React-based weather application with real-time data from OpenWeatherMap API.
+### Features
 
-**Concepts practiced:**
+- 🌡️ Temperature, wind, humidity, visibility
+- 🔍 City search with validation
+- 📜 Search history (last 7 cities)
+- 🌓 Light/Dark theme toggle
+- 💾 Data persistence in localStorage
 
-- useState with multiple state variables
-- useEffect for API calls and localStorage sync
-- Async/await for API requests
-- Conditional rendering (loading/error/data states)
-- Array methods (map, filter)
-- Lazy initialization from localStorage
-- Error handling with try/catch/finally
-- Controlled components
+### Technical Highlights
 
-**Features:**
-
-- City search with real-time weather data
-- Detailed information: temperature, wind speed, humidity, visibility
-- Search history (last 7 cities)
-- Light/Dark theme toggle with persistence
-- Click on history to reload city weather
-- Automatic duplicate prevention in history
-- Data persists after page reload
-
-**Technical highlights:**
-
-- Integration with OpenWeatherMap API
+- Lazy state initialization from localStorage
+- Multiple useEffect hooks for different concerns
 - Environment variables for API key security
-- Debounced search to avoid excessive API calls
-- Loading and error state handling
-- Theme persistence with localStorage
-- Search history management with automatic trimming
+- Comprehensive error handling
 
 ---
 
-### 5. Movie Search App
+## ✅ Todo List
 
-**Live Demo:** [View Movie Search App](https://lazytanakas.github.io/React-mini-projects/movie-search-app/)
+Full-featured task manager with priorities and filtering.
 
-A movie search application powered by The Movie Database (TMDb) API.
+### Features
 
-**Concepts practiced:**
+- ✏️ Add, edit, delete tasks
+- ✔️ Mark as completed
+- 🎯 Priority levels (Low, Medium, High)
+- 🔍 Filter: All / Active / Completed
+- 📊 Sort by priority
+- 💾 Persistent storage
 
-- useState with multiple state variables
-- useEffect with cleanup for debouncing
-- Async/await for API requests
-- setTimeout and clearTimeout for debounce implementation
-- Conditional rendering (loading/error/empty states)
-- Array methods (map)
-- Error handling with try/catch/finally
-- Controlled inputs
-- Form submission prevention
-- Environment variables for API key management
+---
 
-**Features:**
+## 🧮 Calculator
 
-- Real-time movie search with debouncing (500ms delay)
-- Movie cards with poster, title, release year, and rating
-- Minimum 3 characters validation
-- Search status indicators ("Searching...", "Type at least 3 characters...")
-- Clear search button
-- Placeholder image for movies without posters
-- Error handling for failed requests
-- Empty state message
+Functional calculator with European number format.
 
-**Technical highlights:**
+### Features
 
-- Debounced search implementation using useEffect and setTimeout
-- Automatic cleanup of setTimeout to prevent memory leaks
-- Query encoding with encodeURIComponent for safe API requests
-- Conditional image loading with fallback placeholder
-- Multiple loading states (isLoading, isTyping)
-- TMDb API integration for movie data
-- Responsive grid layout for movie cards
+- ➕ Basic operations (+, −, ×, ÷)
+- 📊 Percentage calculations
+- 🔢 Decimal support (comma separator)
+- ⬅️ Backspace functionality
+- ⚠️ Division by zero handling
+
+---
+
+## 🛠️ Setup & Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/LazyTanakaS/React-mini-projects.git
+
+# Navigate to a project
+cd React-mini-projects/movie-search-app
+
+# Install dependencies
+npm install
+
+# Create .env file (for projects with APIs)
+echo "VITE_TMDB_API_KEY=your_api_key" > .env
+echo "VITE_OPENWEATHER_API_KEY=your_api_key" > .env
+
+# Run development server
+npm run dev
+```
+
+### API Keys Required
+
+- **Movie Search App**: [TMDb API](https://www.themoviedb.org/documentation/api) (free)
+- **Weather App**: [OpenWeatherMap](https://openweathermap.org/api) (free)
+
+---
+
+## 📚 Concepts Demonstrated
+
+| Concept               | Projects              |
+| --------------------- | --------------------- |
+| useState, useEffect   | All                   |
+| useCallback           | Movie Search          |
+| Component composition | Movie Search          |
+| Props & callbacks     | Movie Search          |
+| localStorage          | All except Calculator |
+| API integration       | Movie Search, Weather |
+| Debouncing            | Movie Search          |
+| Error handling        | All                   |
+| Conditional rendering | All                   |
+| Responsive design     | All                   |
+
+---
+
+## 👤 Author
+
+**Petro Komar**  
+Junior Frontend Developer
+
+- GitHub: [@LazyTanakaS](https://github.com/LazyTanakaS)
+- Email: <petrokomar16@gmail.com>

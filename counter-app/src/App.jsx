@@ -26,13 +26,16 @@ const App = () => {
   }
 
   return (
-    <div>
+    <div className="app-container">
       <h1>Counter</h1>
-      <h2>{counter}</h2>
+
+      <div className="counter-display">
+        <h2>{counter}</h2>
+      </div>
 
       <div className="buttons">
         <button onClick={handleIncrement}>+1</button>
-        <button onClick={handleReset}>RESET</button>
+        <button onClick={handleReset}>Reset</button>
         <button onClick={handleDecrement}>-1</button>
       </div>
 
