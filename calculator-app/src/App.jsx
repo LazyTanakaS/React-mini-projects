@@ -3,7 +3,6 @@ import './App.css'
 
 function App() {
   const [number1, setNumber1] = useState('')
-  const [number2, setNumber2] = useState('')
   const [operator, setOperator] = useState('')
   const [display, setDisplay] = useState('0')
 
@@ -37,36 +36,26 @@ function App() {
     const toRemove = number1 + ' ' + operator + ' '
     const secondNumber = display.replace(toRemove, '')
 
-    setNumber2(secondNumber)
-
     const num1 = Number(number1.replace(',', '.'))
     const num2 = Number(secondNumber.replace(',', '.'))
-    let result
 
-    if (operator === '+') {
-      result = num1 + num2
-    } else if (operator === '-') {
-      result = num1 - num2
-    } else if (operator === '*') {
-      result = num1 * num2
-    } else if (operator === '/') {
-      if (num2 === 0) {
-        setDisplay('Error')
-        return
-      }
-      result = num1 / num2
+    const operations = {
+      '+': (a, b) => a + b,
+      '-': (a, b) => a - b,
+      '*': (a, b) => a * b,
+      '/': (a, b) => (b === 0 ? null : a / b),
     }
+
+    const result = operations[operator](num1, num2)
 
     setDisplay(String(result).replace('.', ','))
     setNumber1('')
-    setNumber2('')
     setOperator('')
   }
 
   const handleClear = () => {
     setDisplay('0')
     setNumber1('')
-    setNumber2('')
     setOperator('')
   }
 
@@ -97,6 +86,19 @@ function App() {
     }
   }
 
+  const numberButtons = [
+    ['7', '8', '9'],
+    ['4', '5', '6'],
+    ['1', '2', '3'],
+  ]
+
+  const operators = [
+    { symbol: '/', op: '/' },
+    { symbol: '*', op: '*' },
+    { symbol: '-', op: '-' },
+    { symbol: '+', op: '+' },
+  ]
+
   return (
     <div className="calculator">
       <div className="display">{display}</div>
@@ -108,26 +110,18 @@ function App() {
         <button onClick={() => handleOperatorClick('/')}>/</button>
       </div>
 
-      <div className="row">
-        <button onClick={() => handleNumberClick('7')}>7</button>
-        <button onClick={() => handleNumberClick('8')}>8</button>
-        <button onClick={() => handleNumberClick('9')}>9</button>
-        <button onClick={() => handleOperatorClick('*')}>*</button>
-      </div>
-
-      <div className="row">
-        <button onClick={() => handleNumberClick('4')}>4</button>
-        <button onClick={() => handleNumberClick('5')}>5</button>
-        <button onClick={() => handleNumberClick('6')}>6</button>
-        <button onClick={() => handleOperatorClick('-')}>-</button>
-      </div>
-
-      <div className="row">
-        <button onClick={() => handleNumberClick('1')}>1</button>
-        <button onClick={() => handleNumberClick('2')}>2</button>
-        <button onClick={() => handleNumberClick('3')}>3</button>
-        <button onClick={() => handleOperatorClick('+')}>+</button>
-      </div>
+      {numberButtons.map((row, rowIndex) => (
+        <div key={rowIndex} className="row">
+          {row.map(num => (
+            <button key={num} onClick={() => handleNumberClick(num)}>
+              {num}
+            </button>
+          ))}
+          <button onClick={() => handleOperatorClick(operators[rowIndex].op)}>
+            {operators[rowIndex].symbol}
+          </button>
+        </div>
+      ))}
 
       <div className="row">
         <button onClick={() => handleNumberClick('0')}>0</button>

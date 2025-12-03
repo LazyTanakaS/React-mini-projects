@@ -30,7 +30,7 @@ function App() {
     }
 
     const newTodo = {
-      id: Math.random(),
+      id: Date.now().toString(),
       text: task,
       completed: false,
       priority,
@@ -81,15 +81,13 @@ function App() {
 
   // ===== HELPERS =====
   const getFilteredTodos = () => {
-    let filtered = todos
-
-    if (filter === 'active') {
-      filtered = todos.filter(todo => !todo.completed)
+    const filterFn = {
+      active: todo => !todo.completed,
+      completed: todo => todo.completed,
+      all: () => true,
     }
 
-    if (filter === 'completed') {
-      filtered = todos.filter(todo => todo.completed)
-    }
+    let filtered = todos.filter(filterFn[filter] || filterFn.all)
 
     if (sortByPriority) {
       const priorityOrder = { high: 1, medium: 2, low: 3 }
