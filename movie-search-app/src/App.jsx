@@ -12,6 +12,16 @@ function App() {
   const BASE_URL = 'https://api.themoviedb.org/3'
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 
+  // Constants
+  const SEARCH_HISTORY_MAX_SIZE = 5
+  const MIN_SEARCH_QUERY_LENGTH = 3
+  const SEARCH_DEBOUNCE_DELAY = 500 // ms
+  const SCROLL_BUTTON_THRESHOLD = 300 // px
+  const INITIAL_PAGE = 1
+  const DEFAULT_PAGE_COUNT = 1
+  const EMPTY_RESULTS = 0
+  const MIN_RATING_DEFAULT = 0
+
   // UI state (grouped)
   const [uiState, setUiState] = useState({
     isLoading: false,
@@ -37,10 +47,10 @@ function App() {
 
   // Pagination state (grouped)
   const [pagination, setPagination] = useState({
-    searchPage: 1,
-    categoryPage: 1,
-    searchTotalPages: 1,
-    categoryTotalPages: 1,
+    searchPage: INITIAL_PAGE,
+    categoryPage: INITIAL_PAGE,
+    searchTotalPages: DEFAULT_PAGE_COUNT,
+    categoryTotalPages: DEFAULT_PAGE_COUNT,
   })
 
   // Filter state (grouped)
@@ -49,7 +59,7 @@ function App() {
     selectedGenres: [],
     yearFrom: '',
     yearTo: '',
-    minRating: 0,
+    minRating: MIN_RATING_DEFAULT,
   })
 
   // Favorites (localStorage)
@@ -88,14 +98,14 @@ function App() {
   }, [searchHistory])
 
   /**
-   * Add search query to history (max 5 items)
+   * Add search query to history (max items defined by SEARCH_HISTORY_MAX_SIZE)
    */
   const addToSearchHistory = query => {
     if (!query || query.trim() === '') return
 
     setSearchHistory(prev => {
       const filtered = prev.filter(item => item !== query)
-      return [query, ...filtered].slice(0, 5)
+      return [query, ...filtered].slice(0, SEARCH_HISTORY_MAX_SIZE)
     })
   }
 
@@ -106,7 +116,7 @@ function App() {
   const fetchMovies = useCallback(
     async ({
       url,
-      page = 1,
+      page = INITIAL_PAGE,
       onError = 'Failed to load movies',
       updateState,
       additionalAction,
@@ -126,12 +136,12 @@ function App() {
         updateState(data, page)
 
         // Execute additional action if provided (e.g., add to history)
-        if (additionalAction && data.results?.length > 0) {
+        if (additionalAction && data.results?.length > EMPTY_RESULTS) {
           additionalAction(data)
         }
 
         // Show error if no results
-        if (data.results?.length === 0) {
+        if (data.results?.length === EMPTY_RESULTS) {
           setUiState(prev => ({ ...prev, error: 'No movies found' }))
         }
 
@@ -152,7 +162,7 @@ function App() {
    * Search movies by query with pagination
    */
   const searchMovie = useCallback(
-    async (query, page = 1) => {
+    async (query, page = INITIAL_PAGE) => {
       if (query === '') {
         setUiState(prev => ({
           ...prev,
@@ -170,14 +180,14 @@ function App() {
         page,
         onError: 'Movie not found',
         updateState: (data, currentPage) => {
-          if (currentPage === 1) {
+          if (currentPage === INITIAL_PAGE) {
             setMovies(data.results || [])
           } else {
             setMovies(prev => [...prev, ...(data.results || [])])
           }
           setPagination(prev => ({
             ...prev,
-            searchTotalPages: data.total_pages || 1,
+            searchTotalPages: data.total_pages || DEFAULT_PAGE_COUNT,
           }))
         },
         additionalAction: () => addToSearchHistory(query),
@@ -186,21 +196,21 @@ function App() {
     [API_KEY, BASE_URL, fetchMovies]
   )
 
-  // Debounced search effect (500ms delay)
+  // Debounced search effect (delay defined by SEARCH_DEBOUNCE_DELAY)
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 3) {
+    if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
       setMovies([])
       setUiState(prev => ({ ...prev, error: null, isTyping: false }))
       return
     }
 
     setUiState(prev => ({ ...prev, isTyping: true }))
-    setPagination(prev => ({ ...prev, searchPage: 1 }))
+    setPagination(prev => ({ ...prev, searchPage: INITIAL_PAGE }))
 
     const timerId = setTimeout(() => {
-      searchMovie(searchQuery, 1)
+      searchMovie(searchQuery, INITIAL_PAGE)
       setUiState(prev => ({ ...prev, isTyping: false }))
-    }, 500)
+    }, SEARCH_DEBOUNCE_DELAY)
 
     return () => clearTimeout(timerId)
   }, [searchQuery, searchMovie])
@@ -210,7 +220,7 @@ function App() {
     const handleScroll = () => {
       setUiState(prev => ({
         ...prev,
-        showScrollButton: window.scrollY > 300,
+        showScrollButton: window.scrollY > SCROLL_BUTTON_THRESHOLD,
       }))
     }
 
@@ -224,14 +234,14 @@ function App() {
    */
   const scrollToTop = () => {
     window.scrollTo({
-      top: 0,
+      top: EMPTY_RESULTS,
       behavior: 'smooth',
     })
   }
 
   // Determine which movies to display based on category
   const moviesToDisplay =
-    searchQuery.length >= 3
+    searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
       ? movies
       : category === 'favorites'
       ? favorites
@@ -241,7 +251,7 @@ function App() {
    * Fetch movies by category (popular, top_rated, now_playing)
    */
   const fetchCategoryMovies = useCallback(
-    async (category, page = 1) => {
+    async (category, page = INITIAL_PAGE) => {
       const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
 
       await fetchMovies({
@@ -249,14 +259,14 @@ function App() {
         page,
         onError: 'Failed to load category movies',
         updateState: (data, currentPage) => {
-          if (currentPage === 1) {
+          if (currentPage === INITIAL_PAGE) {
             setCategoryMovies(data.results || [])
           } else {
             setCategoryMovies(prev => [...prev, ...(data.results || [])])
           }
           setPagination(prev => ({
             ...prev,
-            categoryTotalPages: data.total_pages || 1,
+            categoryTotalPages: data.total_pages || DEFAULT_PAGE_COUNT,
           }))
         },
       })
@@ -274,29 +284,32 @@ function App() {
 
     setFilters(prev => ({ ...prev, selectedGenres: [] }))
     setFiltersApplied(false)
-    setPagination(prev => ({ ...prev, categoryPage: 1 }))
-    fetchCategoryMovies(category, 1)
+    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
+    fetchCategoryMovies(category, INITIAL_PAGE)
   }, [category, fetchCategoryMovies])
 
   /**
    * Fetch detailed information about a specific movie
    */
-  const fetchMovieDetails = async movieId => {
-    try {
-      const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
-      const response = await fetch(url)
+  const fetchMovieDetails = useCallback(
+    async movieId => {
+      try {
+        const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
+        const response = await fetch(url)
 
-      if (!response.ok) {
-        throw new Error('Failed to load details...')
+        if (!response.ok) {
+          throw new Error('Failed to load details...')
+        }
+
+        const data = await response.json()
+        setModal({ isOpen: true, selectedMovie: data })
+      } catch (err) {
+        console.error('Error fetching movie details:', err)
+        setUiState(prev => ({ ...prev, error: err.message }))
       }
-
-      const data = await response.json()
-      setModal({ isOpen: true, selectedMovie: data })
-    } catch (err) {
-      console.error('Error fetching movie details:', err)
-      setUiState(prev => ({ ...prev, error: err.message }))
-    }
-  }
+    },
+    [API_KEY, BASE_URL]
+  )
 
   /**
    * Fetch available movie genres from TMDB API
@@ -327,10 +340,10 @@ function App() {
    * Discover movies with applied filters (genres, year, rating)
    */
   const discoverMovies = useCallback(
-    async (filterParams, page = 1) => {
+    async (filterParams, page = INITIAL_PAGE) => {
       let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&page=${page}`
 
-      if (filterParams.genres && filterParams.genres.length > 0) {
+      if (filterParams.genres && filterParams.genres.length > EMPTY_RESULTS) {
         url += `&with_genres=${filterParams.genres.join(',')}`
       }
 
@@ -342,7 +355,7 @@ function App() {
         url += `&primary_release_date.lte=${filterParams.yearTo}-12-31`
       }
 
-      if (filterParams.minRating > 0) {
+      if (filterParams.minRating > MIN_RATING_DEFAULT) {
         url += `&vote_average.gte=${filterParams.minRating}`
       }
 
@@ -351,14 +364,14 @@ function App() {
         page,
         onError: 'Failed to load filtered movies',
         updateState: (data, currentPage) => {
-          if (currentPage === 1) {
+          if (currentPage === INITIAL_PAGE) {
             setCategoryMovies(data.results || [])
           } else {
             setCategoryMovies(prev => [...prev, ...(data.results || [])])
           }
           setPagination(prev => ({
             ...prev,
-            categoryTotalPages: data.total_pages || 1,
+            categoryTotalPages: data.total_pages || DEFAULT_PAGE_COUNT,
           }))
         },
       })
@@ -376,72 +389,78 @@ function App() {
   /**
    * Add movie to favorites list
    */
-  const addToFavorites = movie => {
-    if (!favorites.some(fav => fav.id === movie.id)) {
-      setFavorites(prev => [...prev, movie])
-    }
-  }
+  const addToFavorites = useCallback(
+    movie => {
+      if (!favorites.some(fav => fav.id === movie.id)) {
+        setFavorites(prev => [...prev, movie])
+      }
+    },
+    [favorites]
+  )
 
   /**
    * Remove movie from favorites list
    */
-  const removeFromFavorites = movieId => {
+  const removeFromFavorites = useCallback(movieId => {
     setFavorites(prev => prev.filter(fav => fav.id !== movieId))
-  }
+  }, [])
 
   /**
    * Check if movie is in favorites
    */
-  const isFavorite = movieId => {
-    return favorites.some(fav => fav.id === movieId)
-  }
+  const isFavorite = useCallback(
+    movieId => {
+      return favorites.some(fav => fav.id === movieId)
+    },
+    [favorites]
+  )
 
   // Event handlers (callbacks for child components)
 
   // Event handlers (callbacks for child components)
 
-  const handleSearchChange = value => {
+  const handleSearchChange = useCallback(value => {
     setSearchQuery(value)
-  }
+  }, [])
 
-  const handleClearHistory = () => {
+  const handleClearHistory = useCallback(() => {
     setSearchHistory([])
-  }
+  }, [])
 
-  const handleSelectHistory = query => {
+  const handleSelectHistory = useCallback(query => {
     setSearchQuery(query)
-  }
+  }, [])
 
-  const handleClearSearch = () => {
+  const handleClearSearch = useCallback(() => {
     setSearchQuery('')
-  }
+  }, [])
 
-  const handleCategoryChange = newCategory => {
+  const handleCategoryChange = useCallback(newCategory => {
     setCategory(newCategory)
-  }
+  }, [])
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setModal(prev => ({ ...prev, isOpen: false }))
-  }
+  }, [])
 
-  const handleGenresChange = newGenres => {
+  const handleGenresChange = useCallback(newGenres => {
     setFilters(prev => ({ ...prev, selectedGenres: newGenres }))
-  }
+  }, [])
 
-  const handleYearFromChange = value => {
+  const handleYearFromChange = useCallback(value => {
     setFilters(prev => ({ ...prev, yearFrom: value }))
-  }
+  }, [])
 
-  const handleYearToChange = value => {
+  const handleYearToChange = useCallback(value => {
     setFilters(prev => ({ ...prev, yearTo: value }))
-  }
+  }, [])
 
-  const handleMinRatingChange = value => {
+  const handleMinRatingChange = useCallback(value => {
     setFilters(prev => ({ ...prev, minRating: value }))
-  }
+  }, [])
 
-  const handleApplyFilters = () => {
-    setPagination(prev => ({ ...prev, categoryPage: 1 }))
+  const handleApplyFilters = useCallback(() => {
+    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
     discoverMovies(
       {
         genres: filters.selectedGenres,
@@ -449,22 +468,74 @@ function App() {
         yearTo: filters.yearTo,
         minRating: filters.minRating,
       },
-      1
+      INITIAL_PAGE
     )
-  }
+  }, [filters, discoverMovies])
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters(prev => ({
       ...prev,
       selectedGenres: [],
       yearFrom: '',
       yearTo: '',
-      minRating: 0,
+      minRating: MIN_RATING_DEFAULT,
     }))
     setFiltersApplied(false)
-    setPagination(prev => ({ ...prev, categoryPage: 1 }))
-    fetchCategoryMovies(category, 1)
-  }
+    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
+    fetchCategoryMovies(category, INITIAL_PAGE)
+  }, [category, fetchCategoryMovies])
+
+  // Load more handlers
+  const handleLoadMoreSearch = useCallback(() => {
+    setPagination(prev => ({
+      ...prev,
+      searchPage: prev.searchPage + 1,
+    }))
+    searchMovie(searchQuery, pagination.searchPage + 1)
+  }, [searchQuery, pagination.searchPage, searchMovie])
+
+  const handleLoadMoreFiltered = useCallback(() => {
+    setPagination(prev => ({
+      ...prev,
+      categoryPage: prev.categoryPage + 1,
+    }))
+    discoverMovies(
+      {
+        genres: filters.selectedGenres,
+        yearFrom: filters.yearFrom,
+        yearTo: filters.yearTo,
+        minRating: filters.minRating,
+      },
+      pagination.categoryPage + 1
+    )
+  }, [filters, pagination.categoryPage, discoverMovies])
+
+  const handleLoadMoreCategory = useCallback(() => {
+    setPagination(prev => ({
+      ...prev,
+      categoryPage: prev.categoryPage + 1,
+    }))
+    fetchCategoryMovies(category, pagination.categoryPage + 1)
+  }, [category, pagination.categoryPage, fetchCategoryMovies])
+
+  // Movie card handlers
+  const handleMovieCardClick = useCallback(
+    movieId => {
+      fetchMovieDetails(movieId)
+    },
+    [fetchMovieDetails]
+  )
+
+  const handleToggleFavorite = useCallback(
+    (movie, isCurrentlyFavorite) => {
+      if (isCurrentlyFavorite) {
+        removeFromFavorites(movie.id)
+      } else {
+        addToFavorites(movie)
+      }
+    },
+    [addToFavorites, removeFromFavorites]
+  )
 
   return (
     <div className="app">
@@ -477,19 +548,24 @@ function App() {
         onClearSearch={handleClearSearch}
       />
 
-      {searchQuery && searchQuery.length < 3 && (
-        <p className="search-hint">Type at least 3 characters to search...</p>
+      {searchQuery && searchQuery.length < MIN_SEARCH_QUERY_LENGTH && (
+        <p className="search-hint">
+          Type at least {MIN_SEARCH_QUERY_LENGTH} characters to search...
+        </p>
       )}
 
       {uiState.isTyping && <p className="search-status">Searching...</p>}
 
-      {!uiState.isLoading && !uiState.error && moviesToDisplay.length > 0 && (
-        <div className="results-counter">
-          <p>
-            Found <span className="count">{moviesToDisplay.length}</span> movies
-          </p>
-        </div>
-      )}
+      {!uiState.isLoading &&
+        !uiState.error &&
+        moviesToDisplay.length > EMPTY_RESULTS && (
+          <div className="results-counter">
+            <p>
+              Found <span className="count">{moviesToDisplay.length}</span>{' '}
+              movies
+            </p>
+          </div>
+        )}
 
       <CategoryTabs
         activeCategory={category}
@@ -497,22 +573,23 @@ function App() {
         favoritesCount={favorites.length}
       />
 
-      {searchQuery.length < 3 && category !== 'favorites' && (
-        <Filters
-          genres={filters.genres}
-          selectedGenres={filters.selectedGenres}
-          onGenresChange={handleGenresChange}
-          yearFrom={filters.yearFrom}
-          yearTo={filters.yearTo}
-          onYearFromChange={handleYearFromChange}
-          onYearToChange={handleYearToChange}
-          minRating={filters.minRating}
-          onMinRatingChange={handleMinRatingChange}
-          onApplyFilters={handleApplyFilters}
-          onResetFilters={handleResetFilters}
-          filtersApplied={filtersApplied}
-        />
-      )}
+      {searchQuery.length < MIN_SEARCH_QUERY_LENGTH &&
+        category !== 'favorites' && (
+          <Filters
+            genres={filters.genres}
+            selectedGenres={filters.selectedGenres}
+            onGenresChange={handleGenresChange}
+            yearFrom={filters.yearFrom}
+            yearTo={filters.yearTo}
+            onYearFromChange={handleYearFromChange}
+            onYearToChange={handleYearToChange}
+            minRating={filters.minRating}
+            onMinRatingChange={handleMinRatingChange}
+            onApplyFilters={handleApplyFilters}
+            onResetFilters={handleResetFilters}
+            filtersApplied={filtersApplied}
+          />
+        )}
 
       <main className="main">
         {uiState.isLoading && (
@@ -529,7 +606,7 @@ function App() {
 
         {!uiState.isLoading &&
           !uiState.error &&
-          moviesToDisplay.length === 0 && (
+          moviesToDisplay.length === EMPTY_RESULTS && (
             <div className="empty-state">
               <p>
                 {category === 'favorites'
@@ -539,71 +616,52 @@ function App() {
             </div>
           )}
 
-        {!uiState.isLoading && !uiState.error && moviesToDisplay.length > 0 && (
-          <>
-            <div className="movies-grid">
-              {moviesToDisplay.map(movie => (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  onCardClick={() => fetchMovieDetails(movie.id)}
-                  onFavoriteClick={
-                    isFavorite(movie.id)
-                      ? () => removeFromFavorites(movie.id)
-                      : () => addToFavorites(movie)
-                  }
-                  isFavorite={isFavorite(movie.id)}
-                />
-              ))}
-            </div>
-
-            {category !== 'favorites' &&
-              (searchQuery.length >= 3
-                ? pagination.searchPage < pagination.searchTotalPages
-                : pagination.categoryPage < pagination.categoryTotalPages) && (
-                <div className="load-more-container">
-                  <button
-                    onClick={() => {
-                      if (searchQuery.length >= 3) {
-                        setPagination(prev => ({
-                          ...prev,
-                          searchPage: prev.searchPage + 1,
-                        }))
-                        searchMovie(searchQuery, pagination.searchPage + 1)
-                      } else if (filtersApplied) {
-                        setPagination(prev => ({
-                          ...prev,
-                          categoryPage: prev.categoryPage + 1,
-                        }))
-                        discoverMovies(
-                          {
-                            genres: filters.selectedGenres,
-                            yearFrom: filters.yearFrom,
-                            yearTo: filters.yearTo,
-                            minRating: filters.minRating,
-                          },
-                          pagination.categoryPage + 1
-                        )
-                      } else {
-                        setPagination(prev => ({
-                          ...prev,
-                          categoryPage: prev.categoryPage + 1,
-                        }))
-                        fetchCategoryMovies(
-                          category,
-                          pagination.categoryPage + 1
-                        )
+        {!uiState.isLoading &&
+          !uiState.error &&
+          moviesToDisplay.length > EMPTY_RESULTS && (
+            <>
+              <div className="movies-grid">
+                {moviesToDisplay.map(movie => {
+                  const isMovieFavorite = isFavorite(movie.id)
+                  return (
+                    <MovieCard
+                      key={movie.id}
+                      movie={movie}
+                      onCardClick={() => handleMovieCardClick(movie.id)}
+                      onFavoriteClick={() =>
+                        handleToggleFavorite(movie, isMovieFavorite)
                       }
-                    }}
-                    className="load-more-button"
-                    disabled={uiState.isLoading}
-                  >
-                    {uiState.isLoading ? 'Loading...' : 'Load More Movies'}
-                  </button>
-                </div>
-              )}
-          </>
-        )}
+                      isFavorite={isMovieFavorite}
+                    />
+                  )
+                })}
+              </div>
+
+              {category !== 'favorites' &&
+                (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
+                  ? pagination.searchPage < pagination.searchTotalPages
+                  : pagination.categoryPage <
+                    pagination.categoryTotalPages) && (
+                  <div className="load-more-container">
+                    <button
+                      onClick={() => {
+                        if (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
+                          handleLoadMoreSearch()
+                        } else if (filtersApplied) {
+                          handleLoadMoreFiltered()
+                        } else {
+                          handleLoadMoreCategory()
+                        }
+                      }}
+                      className="load-more-button"
+                      disabled={uiState.isLoading}
+                    >
+                      {uiState.isLoading ? 'Loading...' : 'Load More Movies'}
+                    </button>
+                  </div>
+                )}
+            </>
+          )}
       </main>
 
       {uiState.showScrollButton && (
