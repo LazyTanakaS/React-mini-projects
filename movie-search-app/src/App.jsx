@@ -100,6 +100,55 @@ function App() {
   }
 
   /**
+   * Universal function for fetching movies from TMDB API
+   * Handles loading states, errors, and pagination
+   */
+  const fetchMovies = useCallback(
+    async ({
+      url,
+      page = 1,
+      onError = 'Failed to load movies',
+      updateState,
+      additionalAction,
+    }) => {
+      setUiState(prev => ({ ...prev, isLoading: true, error: null }))
+
+      try {
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          throw new Error(onError)
+        }
+
+        const data = await response.json()
+
+        // Update state with results
+        updateState(data, page)
+
+        // Execute additional action if provided (e.g., add to history)
+        if (additionalAction && data.results?.length > 0) {
+          additionalAction(data)
+        }
+
+        // Show error if no results
+        if (data.results?.length === 0) {
+          setUiState(prev => ({ ...prev, error: 'No movies found' }))
+        }
+
+        return data
+      } catch (err) {
+        setUiState(prev => ({ ...prev, error: err.message }))
+        // Clear results on error
+        updateState({ results: [] }, page)
+        throw err
+      } finally {
+        setUiState(prev => ({ ...prev, isLoading: false }))
+      }
+    },
+    []
+  )
+
+  /**
    * Search movies by query with pagination
    */
   const searchMovie = useCallback(
@@ -112,45 +161,29 @@ function App() {
         return
       }
 
-      setUiState(prev => ({ ...prev, isLoading: true, error: null }))
+      const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&page=${page}&query=${encodeURIComponent(
+        query
+      )}`
 
-      try {
-        const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&page=${page}&query=${encodeURIComponent(
-          query
-        )}`
-        const response = await fetch(url)
-
-        if (!response.ok) {
-          throw new Error('Movie not found')
-        }
-
-        const data = await response.json()
-
-        if (page === 1) {
-          setMovies(data.results || [])
-          if (data.results && data.results.length > 0) {
-            addToSearchHistory(query)
+      await fetchMovies({
+        url,
+        page,
+        onError: 'Movie not found',
+        updateState: (data, currentPage) => {
+          if (currentPage === 1) {
+            setMovies(data.results || [])
+          } else {
+            setMovies(prev => [...prev, ...(data.results || [])])
           }
-        } else {
-          setMovies(prev => [...prev, ...(data.results || [])])
-        }
-
-        setPagination(prev => ({
-          ...prev,
-          searchTotalPages: data.total_pages || 1,
-        }))
-
-        if (data.results.length === 0) {
-          setUiState(prev => ({ ...prev, error: 'No movie found' }))
-        }
-      } catch (err) {
-        setUiState(prev => ({ ...prev, error: err.message }))
-        setMovies([])
-      } finally {
-        setUiState(prev => ({ ...prev, isLoading: false }))
-      }
+          setPagination(prev => ({
+            ...prev,
+            searchTotalPages: data.total_pages || 1,
+          }))
+        },
+        additionalAction: () => addToSearchHistory(query),
+      })
     },
-    [API_KEY, BASE_URL]
+    [API_KEY, BASE_URL, fetchMovies]
   )
 
   // Debounced search effect (500ms delay)
@@ -209,43 +242,26 @@ function App() {
    */
   const fetchCategoryMovies = useCallback(
     async (category, page = 1) => {
-      setUiState(prev => ({ ...prev, isLoading: true, error: null }))
+      const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
 
-      try {
-        const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
-        const response = await fetch(url)
-
-        if (!response.ok) {
-          throw new Error('Failed to load category movies')
-        }
-
-        const data = await response.json()
-
-        if (page === 1) {
-          setCategoryMovies(data.results || [])
-        } else {
-          setCategoryMovies(prev => [...prev, ...(data.results || [])])
-        }
-
-        setPagination(prev => ({
-          ...prev,
-          categoryTotalPages: data.total_pages || 1,
-        }))
-
-        if (data.results.length === 0) {
-          setUiState(prev => ({
+      await fetchMovies({
+        url,
+        page,
+        onError: 'Failed to load category movies',
+        updateState: (data, currentPage) => {
+          if (currentPage === 1) {
+            setCategoryMovies(data.results || [])
+          } else {
+            setCategoryMovies(prev => [...prev, ...(data.results || [])])
+          }
+          setPagination(prev => ({
             ...prev,
-            error: 'No movies found in this category',
+            categoryTotalPages: data.total_pages || 1,
           }))
-        }
-      } catch (err) {
-        setUiState(prev => ({ ...prev, error: err.message }))
-        setCategoryMovies([])
-      } finally {
-        setUiState(prev => ({ ...prev, isLoading: false }))
-      }
+        },
+      })
     },
-    [API_KEY, BASE_URL]
+    [API_KEY, BASE_URL, fetchMovies]
   )
 
   // Fetch category movies when category changes
@@ -310,10 +326,8 @@ function App() {
   /**
    * Discover movies with applied filters (genres, year, rating)
    */
-  const discoverMovies = async (filterParams, page = 1) => {
-    setUiState(prev => ({ ...prev, isLoading: true, error: null }))
-
-    try {
+  const discoverMovies = useCallback(
+    async (filterParams, page = 1) => {
       let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&page=${page}`
 
       if (filterParams.genres && filterParams.genres.length > 0) {
@@ -332,32 +346,27 @@ function App() {
         url += `&vote_average.gte=${filterParams.minRating}`
       }
 
-      const response = await fetch(url)
+      await fetchMovies({
+        url,
+        page,
+        onError: 'Failed to load filtered movies',
+        updateState: (data, currentPage) => {
+          if (currentPage === 1) {
+            setCategoryMovies(data.results || [])
+          } else {
+            setCategoryMovies(prev => [...prev, ...(data.results || [])])
+          }
+          setPagination(prev => ({
+            ...prev,
+            categoryTotalPages: data.total_pages || 1,
+          }))
+        },
+      })
 
-      if (!response.ok) {
-        throw new Error('Failed to load Filters')
-      }
-
-      const data = await response.json()
-
-      if (page === 1) {
-        setCategoryMovies(data.results || [])
-      } else {
-        setCategoryMovies(prev => [...prev, ...(data.results || [])])
-      }
-
-      setPagination(prev => ({
-        ...prev,
-        categoryTotalPages: data.total_pages || 1,
-      }))
       setFiltersApplied(true)
-    } catch (err) {
-      setUiState(prev => ({ ...prev, error: err.message }))
-      setCategoryMovies([])
-    } finally {
-      setUiState(prev => ({ ...prev, isLoading: false }))
-    }
-  }
+    },
+    [API_KEY, BASE_URL, fetchMovies]
+  )
 
   // Save favorites to localStorage
   useEffect(() => {
