@@ -136,11 +136,7 @@ function App() {
             setCityInput(e.target.value)
           }}
         />
-        <button
-          className="btn-search"
-          type="submit"
-          onClick={() => fetchWeather(cityInput)}
-        >
+        <button className="btn-search" type="submit">
           Search
         </button>
       </form>
@@ -199,10 +195,10 @@ function App() {
       )}
 
       <div className="recent-weather">
-        {history.map((city, index) => (
+        {history.map(city => (
           <div
             className="history-card"
-            key={index}
+            key={city.cityName}
             onClick={() => {
               fetchWeather(city.cityName)
             }}
