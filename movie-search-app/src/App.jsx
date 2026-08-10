@@ -5,6 +5,8 @@ import SearchBar from './components/SearchBar/SearchBar'
 import CategoryTabs from './components/CategoryTabs/CategoryTabs'
 import MovieModal from './components/MovieModal/MovieModal'
 import Filters from './components/Filtres/Filters'
+import useFavorites from './hooks/useFavorites'
+import useDebounce from './hooks/useDebounce'
 
 function App() {
   // API configuration
@@ -21,6 +23,8 @@ function App() {
   const DEFAULT_PAGE_COUNT = 1
   const EMPTY_RESULTS = 0
   const MIN_RATING_DEFAULT = 0
+  const { favorites, addToFavorites, removeFromFavorites, isFavorite } =
+    useFavorites()
 
   // UI state (grouped)
   const [uiState, setUiState] = useState({
@@ -60,21 +64,6 @@ function App() {
     yearFrom: '',
     yearTo: '',
     minRating: MIN_RATING_DEFAULT,
-  })
-
-  // Favorites (localStorage)
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem('favorites')
-
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (err) {
-        console.error('Failed to parse favorites', err)
-        return []
-      }
-    }
-    return []
   })
 
   // Search history (localStorage)
@@ -196,7 +185,9 @@ function App() {
     [API_KEY, BASE_URL, fetchMovies]
   )
 
-  // Debounced search effect (delay defined by SEARCH_DEBOUNCE_DELAY)
+  // Debounced search
+  const debouncedQuery = useDebounce(searchQuery, SEARCH_DEBOUNCE_DELAY)
+
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
       setMovies([])
@@ -205,15 +196,17 @@ function App() {
     }
 
     setUiState(prev => ({ ...prev, isTyping: true }))
+  }, [searchQuery])
+
+  useEffect(() => {
+    if (!debouncedQuery || debouncedQuery.length < MIN_SEARCH_QUERY_LENGTH) {
+      return
+    }
+
     setPagination(prev => ({ ...prev, searchPage: INITIAL_PAGE }))
-
-    const timerId = setTimeout(() => {
-      searchMovie(searchQuery, INITIAL_PAGE)
-      setUiState(prev => ({ ...prev, isTyping: false }))
-    }, SEARCH_DEBOUNCE_DELAY)
-
-    return () => clearTimeout(timerId)
-  }, [searchQuery, searchMovie])
+    searchMovie(debouncedQuery, INITIAL_PAGE)
+    setUiState(prev => ({ ...prev, isTyping: false }))
+  }, [debouncedQuery, searchMovie])
 
   // Handle scroll button visibility
   useEffect(() => {
@@ -244,8 +237,8 @@ function App() {
     searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
       ? movies
       : category === 'favorites'
-      ? favorites
-      : categoryMovies
+        ? favorites
+        : categoryMovies
 
   /**
    * Fetch movies by category (popular, top_rated, now_playing)
@@ -380,42 +373,6 @@ function App() {
     },
     [API_KEY, BASE_URL, fetchMovies]
   )
-
-  // Save favorites to localStorage
-  useEffect(() => {
-    localStorage.setItem('favorites', JSON.stringify(favorites))
-  }, [favorites])
-
-  /**
-   * Add movie to favorites list
-   */
-  const addToFavorites = useCallback(
-    movie => {
-      if (!favorites.some(fav => fav.id === movie.id)) {
-        setFavorites(prev => [...prev, movie])
-      }
-    },
-    [favorites]
-  )
-
-  /**
-   * Remove movie from favorites list
-   */
-  const removeFromFavorites = useCallback(movieId => {
-    setFavorites(prev => prev.filter(fav => fav.id !== movieId))
-  }, [])
-
-  /**
-   * Check if movie is in favorites
-   */
-  const isFavorite = useCallback(
-    movieId => {
-      return favorites.some(fav => fav.id === movieId)
-    },
-    [favorites]
-  )
-
-  // Event handlers (callbacks for child components)
 
   // Event handlers (callbacks for child components)
 
