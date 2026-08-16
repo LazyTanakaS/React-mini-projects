@@ -545,16 +545,13 @@ function App() {
 
       {uiState.isTyping && <p className="search-status">Searching...</p>}
 
-      {!uiState.isLoading &&
-        !uiState.error &&
-        moviesToDisplay.length > EMPTY_RESULTS && (
-          <div className="results-counter">
-            <p>
-              Found <span className="count">{moviesToDisplay.length}</span>{' '}
-              movies
-            </p>
-          </div>
-        )}
+      {!isLoading && !error && moviesToDisplay.length > EMPTY_RESULTS && (
+        <div className="results-counter">
+          <p>
+            Found <span className="count">{moviesToDisplay.length}</span> movies
+          </p>
+        </div>
+      )}
 
       <CategoryTabs
         activeCategory={category}
@@ -581,76 +578,71 @@ function App() {
         )}
 
       <main className="main">
-        {uiState.isLoading && (
+        {isLoading && (
           <div className="loader">
             <p>Loading...</p>
           </div>
         )}
 
-        {uiState.error && (
+        {error && (
           <div className="fails">
-            <p>{uiState.error}</p>
+            <p>{error.message}</p>
           </div>
         )}
 
-        {!uiState.isLoading &&
-          !uiState.error &&
-          moviesToDisplay.length === EMPTY_RESULTS && (
-            <div className="empty-state">
-              <p>
-                {category === 'favorites'
-                  ? 'No favorites yet. Add movies by clicking the ❤️ button!'
-                  : 'Search for your favorite movies'}
-              </p>
+        {!isLoading && !error && moviesToDisplay.length === EMPTY_RESULTS && (
+          <div className="empty-state">
+            <p>
+              {category === 'favorites'
+                ? 'No favorites yet. Add movies by clicking the ❤️ button!'
+                : 'Search for your favorite movies'}
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !error && moviesToDisplay.length > EMPTY_RESULTS && (
+          <>
+            <div className="movies-grid">
+              {moviesToDisplay.map(movie => {
+                const isMovieFavorite = isFavorite(movie.id)
+                return (
+                  <MovieCard
+                    key={movie.id}
+                    movie={movie}
+                    onCardClick={() => handleMovieCardClick(movie.id)}
+                    onFavoriteClick={() =>
+                      handleToggleFavorite(movie, isMovieFavorite)
+                    }
+                    isFavorite={isMovieFavorite}
+                  />
+                )
+              })}
             </div>
-          )}
 
-        {!uiState.isLoading &&
-          !uiState.error &&
-          moviesToDisplay.length > EMPTY_RESULTS && (
-            <>
-              <div className="movies-grid">
-                {moviesToDisplay.map(movie => {
-                  const isMovieFavorite = isFavorite(movie.id)
-                  return (
-                    <MovieCard
-                      key={movie.id}
-                      movie={movie}
-                      onCardClick={() => handleMovieCardClick(movie.id)}
-                      onFavoriteClick={() =>
-                        handleToggleFavorite(movie, isMovieFavorite)
+            {category !== 'favorites' &&
+              (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
+                ? pagination.searchPage < pagination.searchTotalPages
+                : pagination.categoryPage < pagination.categoryTotalPages) && (
+                <div className="load-more-container">
+                  <button
+                    onClick={() => {
+                      if (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
+                        handleLoadMoreSearch()
+                      } else if (filtersApplied) {
+                        handleLoadMoreFiltered()
+                      } else {
+                        handleLoadMoreCategory()
                       }
-                      isFavorite={isMovieFavorite}
-                    />
-                  )
-                })}
-              </div>
-
-              {category !== 'favorites' &&
-                (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
-                  ? pagination.searchPage < pagination.searchTotalPages
-                  : pagination.categoryPage <
-                    pagination.categoryTotalPages) && (
-                  <div className="load-more-container">
-                    <button
-                      onClick={() => {
-                        if (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
-                          handleLoadMoreSearch()
-                        } else if (filtersApplied) {
-                          handleLoadMoreFiltered()
-                        } else {
-                          handleLoadMoreCategory()
-                        }
-                      }}
-                      className="load-more-button"
-                      disabled={uiState.isLoading}
-                    >
-                      {uiState.isLoading ? 'Loading...' : 'Load More Movies'}
-                    </button>
-                  </div>
-                )}
-            </>
-          )}
+                    }}
+                    className="load-more-button"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Loading...' : 'Load More Movies'}
+                  </button>
+                </div>
+              )}
+          </>
+        )}
       </main>
 
       {uiState.showScrollButton && (
