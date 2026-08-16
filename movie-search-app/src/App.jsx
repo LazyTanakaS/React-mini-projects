@@ -24,6 +24,28 @@ const DEFAULT_PAGE_COUNT = 1
 const EMPTY_RESULTS = 0
 const MIN_RATING_DEFAULT = 0
 
+function buildDiscoverUrl(filters) {
+  let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}`
+
+  if (filters.selectedGenres.length > EMPTY_RESULTS) {
+    url += `&with_genres=${filters.selectedGenres.join(',')}`
+  }
+
+  if (filters.yearFrom) {
+    url += `&primary_release_date.gte=${filters.yearFrom}-01-01`
+  }
+
+  if (filters.yearTo) {
+    url += `&primary_release_date.lte=${filters.yearTo}-12-31`
+  }
+
+  if (filters.minRating > MIN_RATING_DEFAULT) {
+    url += `&vote_average.gte=${filters.minRating}`
+  }
+
+  return url
+}
+
 function App() {
   // UI state (grouped)
   const [uiState, setUiState] = useState({
@@ -35,11 +57,9 @@ function App() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
-  const [movies, setMovies] = useState([])
 
   // Category state
   const [category, setCategory] = useState('popular')
-  const [categoryMovies, setCategoryMovies] = useState([])
   const [filtersApplied, setFiltersApplied] = useState(false)
 
   // Modal state (grouped)
@@ -91,9 +111,11 @@ function App() {
     : null
 
   const categoryUrl =
-    category !== 'favorites'
-      ? `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
-      : null
+    category === 'favorites'
+      ? null
+      : filtersApplied
+        ? buildDiscoverUrl(filters)
+        : `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
 
   const {
     data: searchResults,
@@ -125,96 +147,8 @@ function App() {
     })
   }
 
-  /**
-   * Universal function for fetching movies from TMDB API
-   * Handles loading states, errors, and pagination
-   */
-  const fetchMovies = useCallback(
-    async ({
-      url,
-      page = INITIAL_PAGE,
-      onError = 'Failed to load movies',
-      updateState,
-      additionalAction,
-    }) => {
-      setUiState(prev => ({ ...prev, isLoading: true, error: null }))
-
-      try {
-        const response = await fetch(url)
-
-        if (!response.ok) {
-          throw new Error(onError)
-        }
-
-        const data = await response.json()
-
-        // Update state with results
-        updateState(data, page)
-
-        // Execute additional action if provided (e.g., add to history)
-        if (additionalAction && data.results?.length > EMPTY_RESULTS) {
-          additionalAction(data)
-        }
-
-        // Show error if no results
-        if (data.results?.length === EMPTY_RESULTS) {
-          setUiState(prev => ({ ...prev, error: 'No movies found' }))
-        }
-
-        return data
-      } catch (err) {
-        setUiState(prev => ({ ...prev, error: err.message }))
-        // Clear results on error
-        updateState({ results: [] }, page)
-        throw err
-      } finally {
-        setUiState(prev => ({ ...prev, isLoading: false }))
-      }
-    },
-    []
-  )
-
-  /**
-   * Search movies by query with pagination
-   */
-  const searchMovie = useCallback(
-    async (query, page = INITIAL_PAGE) => {
-      if (query === '') {
-        setUiState(prev => ({
-          ...prev,
-          error: 'Please enter the name of the movie',
-        }))
-        return
-      }
-
-      const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&page=${page}&query=${encodeURIComponent(
-        query
-      )}`
-
-      await fetchMovies({
-        url,
-        page,
-        onError: 'Movie not found',
-        updateState: (data, currentPage) => {
-          if (currentPage === INITIAL_PAGE) {
-            setMovies(data.results || [])
-          } else {
-            setMovies(prev => [...prev, ...(data.results || [])])
-          }
-          setPagination(prev => ({
-            ...prev,
-            searchTotalPages: data.total_pages || DEFAULT_PAGE_COUNT,
-          }))
-        },
-        additionalAction: () => addToSearchHistory(query),
-      })
-    },
-    [API_KEY, BASE_URL, fetchMovies]
-  )
-
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
-      setMovies([])
       setUiState(prev => ({ ...prev, error: null, isTyping: false }))
       return
     }
@@ -228,9 +162,8 @@ function App() {
     }
 
     setPagination(prev => ({ ...prev, searchPage: INITIAL_PAGE }))
-    searchMovie(debouncedQuery, INITIAL_PAGE)
     setUiState(prev => ({ ...prev, isTyping: false }))
-  }, [debouncedQuery, searchMovie])
+  }, [debouncedQuery])
 
   // Handle scroll button visibility
   useEffect(() => {
@@ -272,33 +205,6 @@ function App() {
   const error =
     searchQuery.length >= MIN_SEARCH_QUERY_LENGTH ? searchError : categoryError
 
-  /**
-   * Fetch movies by category (popular, top_rated, now_playing)
-   */
-  const fetchCategoryMovies = useCallback(
-    async (category, page = INITIAL_PAGE) => {
-      const url = `${BASE_URL}/movie/${category}?api_key=${API_KEY}&page=${page}`
-
-      await fetchMovies({
-        url,
-        page,
-        onError: 'Failed to load category movies',
-        updateState: (data, currentPage) => {
-          if (currentPage === INITIAL_PAGE) {
-            setCategoryMovies(data.results || [])
-          } else {
-            setCategoryMovies(prev => [...prev, ...(data.results || [])])
-          }
-          setPagination(prev => ({
-            ...prev,
-            categoryTotalPages: data.total_pages || DEFAULT_PAGE_COUNT,
-          }))
-        },
-      })
-    },
-    [API_KEY, BASE_URL, fetchMovies]
-  )
-
   // Fetch category movies when category changes
   useEffect(() => {
     if (category === 'favorites') {
@@ -310,8 +216,7 @@ function App() {
     setFilters(prev => ({ ...prev, selectedGenres: [] }))
     setFiltersApplied(false)
     setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
-    fetchCategoryMovies(category, INITIAL_PAGE)
-  }, [category, fetchCategoryMovies])
+  }, [category])
 
   /**
    * Fetch detailed information about a specific movie
@@ -361,51 +266,6 @@ function App() {
     fetchGenres()
   }, [fetchGenres])
 
-  /**
-   * Discover movies with applied filters (genres, year, rating)
-   */
-  const discoverMovies = useCallback(
-    async (filterParams, page = INITIAL_PAGE) => {
-      let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&page=${page}`
-
-      if (filterParams.genres && filterParams.genres.length > EMPTY_RESULTS) {
-        url += `&with_genres=${filterParams.genres.join(',')}`
-      }
-
-      if (filterParams.yearFrom) {
-        url += `&primary_release_date.gte=${filterParams.yearFrom}-01-01`
-      }
-
-      if (filterParams.yearTo) {
-        url += `&primary_release_date.lte=${filterParams.yearTo}-12-31`
-      }
-
-      if (filterParams.minRating > MIN_RATING_DEFAULT) {
-        url += `&vote_average.gte=${filterParams.minRating}`
-      }
-
-      await fetchMovies({
-        url,
-        page,
-        onError: 'Failed to load filtered movies',
-        updateState: (data, currentPage) => {
-          if (currentPage === INITIAL_PAGE) {
-            setCategoryMovies(data.results || [])
-          } else {
-            setCategoryMovies(prev => [...prev, ...(data.results || [])])
-          }
-          setPagination(prev => ({
-            ...prev,
-            categoryTotalPages: data.total_pages || DEFAULT_PAGE_COUNT,
-          }))
-        },
-      })
-
-      setFiltersApplied(true)
-    },
-    [API_KEY, BASE_URL, fetchMovies]
-  )
-
   // Event handlers (callbacks for child components)
 
   const handleSearchChange = useCallback(value => {
@@ -450,16 +310,8 @@ function App() {
 
   const handleApplyFilters = useCallback(() => {
     setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
-    discoverMovies(
-      {
-        genres: filters.selectedGenres,
-        yearFrom: filters.yearFrom,
-        yearTo: filters.yearTo,
-        minRating: filters.minRating,
-      },
-      INITIAL_PAGE
-    )
-  }, [filters, discoverMovies])
+    setFiltersApplied(true)
+  }, [])
 
   const handleResetFilters = useCallback(() => {
     setFilters(prev => ({
@@ -471,8 +323,7 @@ function App() {
     }))
     setFiltersApplied(false)
     setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
-    fetchCategoryMovies(category, INITIAL_PAGE)
-  }, [category, fetchCategoryMovies])
+  }, [])
 
   // Load more handlers
   const handleLoadMoreSearch = useCallback(() => {
@@ -480,32 +331,14 @@ function App() {
       ...prev,
       searchPage: prev.searchPage + 1,
     }))
-    searchMovie(searchQuery, pagination.searchPage + 1)
-  }, [searchQuery, pagination.searchPage, searchMovie])
-
-  const handleLoadMoreFiltered = useCallback(() => {
-    setPagination(prev => ({
-      ...prev,
-      categoryPage: prev.categoryPage + 1,
-    }))
-    discoverMovies(
-      {
-        genres: filters.selectedGenres,
-        yearFrom: filters.yearFrom,
-        yearTo: filters.yearTo,
-        minRating: filters.minRating,
-      },
-      pagination.categoryPage + 1
-    )
-  }, [filters, pagination.categoryPage, discoverMovies])
+  }, [])
 
   const handleLoadMoreCategory = useCallback(() => {
     setPagination(prev => ({
       ...prev,
       categoryPage: prev.categoryPage + 1,
     }))
-    fetchCategoryMovies(category, pagination.categoryPage + 1)
-  }, [category, pagination.categoryPage, fetchCategoryMovies])
+  }, [])
 
   // Movie card handlers
   const handleMovieCardClick = useCallback(
@@ -621,15 +454,13 @@ function App() {
 
             {category !== 'favorites' &&
               (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
-                ? pagination.searchPage < pagination.searchTotalPages
-                : pagination.categoryPage < pagination.categoryTotalPages) && (
+                ? pagination.searchPage < searchTotalPages
+                : pagination.categoryPage < categoryTotalPages) && (
                 <div className="load-more-container">
                   <button
                     onClick={() => {
                       if (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
                         handleLoadMoreSearch()
-                      } else if (filtersApplied) {
-                        handleLoadMoreFiltered()
                       } else {
                         handleLoadMoreCategory()
                       }
