@@ -7,25 +7,24 @@ import MovieModal from './components/MovieModal/MovieModal'
 import Filters from './components/Filtres/Filters'
 import useFavorites from './hooks/useFavorites'
 import useDebounce from './hooks/useDebounce'
+import useMovieData from './hooks/useMovieData'
+
+// API configuration
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY
+const BASE_URL = 'https://api.themoviedb.org/3'
+const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
+
+// Constants
+const SEARCH_HISTORY_MAX_SIZE = 5
+const MIN_SEARCH_QUERY_LENGTH = 3
+const SEARCH_DEBOUNCE_DELAY = 500 // ms
+const SCROLL_BUTTON_THRESHOLD = 300 // px
+const INITIAL_PAGE = 1
+const DEFAULT_PAGE_COUNT = 1
+const EMPTY_RESULTS = 0
+const MIN_RATING_DEFAULT = 0
 
 function App() {
-  // API configuration
-  const API_KEY = import.meta.env.VITE_TMDB_API_KEY
-  const BASE_URL = 'https://api.themoviedb.org/3'
-  const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
-
-  // Constants
-  const SEARCH_HISTORY_MAX_SIZE = 5
-  const MIN_SEARCH_QUERY_LENGTH = 3
-  const SEARCH_DEBOUNCE_DELAY = 500 // ms
-  const SCROLL_BUTTON_THRESHOLD = 300 // px
-  const INITIAL_PAGE = 1
-  const DEFAULT_PAGE_COUNT = 1
-  const EMPTY_RESULTS = 0
-  const MIN_RATING_DEFAULT = 0
-  const { favorites, addToFavorites, removeFromFavorites, isFavorite } =
-    useFavorites()
-
   // UI state (grouped)
   const [uiState, setUiState] = useState({
     isLoading: false,
@@ -80,6 +79,34 @@ function App() {
     }
     return []
   })
+
+  const debouncedQuery = useDebounce(searchQuery, SEARCH_DEBOUNCE_DELAY)
+  const { favorites, addToFavorites, removeFromFavorites, isFavorite } =
+    useFavorites()
+
+  const searchUrl = debouncedQuery
+    ? `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(
+        debouncedQuery
+      )}`
+    : null
+
+  const categoryUrl =
+    category !== 'favorites'
+      ? `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
+      : null
+
+  const {
+    data: searchResults,
+    totalPages: searchTotalPages,
+    isLoading: isSearchLoading,
+    error: searchError,
+  } = useMovieData(searchUrl, pagination.searchPage)
+  const {
+    data: categoryResults,
+    totalPages: categoryTotalPages,
+    isLoading: isCategoryLoading,
+    error: categoryError,
+  } = useMovieData(categoryUrl, pagination.categoryPage)
 
   // Save search history to localStorage
   useEffect(() => {
@@ -185,9 +212,6 @@ function App() {
     [API_KEY, BASE_URL, fetchMovies]
   )
 
-  // Debounced search
-  const debouncedQuery = useDebounce(searchQuery, SEARCH_DEBOUNCE_DELAY)
-
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
       setMovies([])
@@ -235,10 +259,18 @@ function App() {
   // Determine which movies to display based on category
   const moviesToDisplay =
     searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
-      ? movies
+      ? searchResults
       : category === 'favorites'
         ? favorites
-        : categoryMovies
+        : categoryResults
+
+  const isLoading =
+    searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
+      ? isSearchLoading
+      : isCategoryLoading
+
+  const error =
+    searchQuery.length >= MIN_SEARCH_QUERY_LENGTH ? searchError : categoryError
 
   /**
    * Fetch movies by category (popular, top_rated, now_playing)
