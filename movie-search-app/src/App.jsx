@@ -8,6 +8,7 @@ import Filters from './components/Filtres/Filters'
 import useFavorites from './hooks/useFavorites'
 import useDebounce from './hooks/useDebounce'
 import useMovieData from './hooks/useMovieData'
+import useSearchHistory from './hooks/useSearchHistory'
 
 // API configuration
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY
@@ -85,21 +86,6 @@ function App() {
     minRating: MIN_RATING_DEFAULT,
   })
 
-  // Search history (localStorage)
-  const [searchHistory, setSearchHistory] = useState(() => {
-    const search = localStorage.getItem('searchHistory')
-
-    if (search) {
-      try {
-        return JSON.parse(search)
-      } catch (err) {
-        console.error('Failed to parse search', err)
-        return []
-      }
-    }
-    return []
-  })
-
   const debouncedQuery = useDebounce(searchQuery, SEARCH_DEBOUNCE_DELAY)
   const { favorites, addToFavorites, removeFromFavorites, isFavorite } =
     useFavorites()
@@ -129,23 +115,6 @@ function App() {
     isLoading: isCategoryLoading,
     error: categoryError,
   } = useMovieData(categoryUrl, pagination.categoryPage)
-
-  // Save search history to localStorage
-  useEffect(() => {
-    localStorage.setItem('searchHistory', JSON.stringify(searchHistory))
-  }, [searchHistory])
-
-  /**
-   * Add search query to history (max items defined by SEARCH_HISTORY_MAX_SIZE)
-   */
-  const addToSearchHistory = query => {
-    if (!query || query.trim() === '') return
-
-    setSearchHistory(prev => {
-      const filtered = prev.filter(item => item !== query)
-      return [query, ...filtered].slice(0, SEARCH_HISTORY_MAX_SIZE)
-    })
-  }
 
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
@@ -273,7 +242,7 @@ function App() {
   }, [])
 
   const handleClearHistory = useCallback(() => {
-    setSearchHistory([])
+    clearHistory()
   }, [])
 
   const handleSelectHistory = useCallback(query => {
