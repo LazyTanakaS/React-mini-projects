@@ -190,25 +190,21 @@ function App() {
   /**
    * Fetch detailed information about a specific movie
    */
-  const fetchMovieDetails = useCallback(
-    async movieId => {
-      try {
-        const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
-        const response = await fetch(url)
+  const fetchMovieDetails = useCallback(async movieId => {
+    try {
+      const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
+      const response = await fetch(url)
 
-        if (!response.ok) {
-          throw new Error('Failed to load details...')
-        }
-
-        const data = await response.json()
-        setModal({ isOpen: true, selectedMovie: data })
-      } catch (err) {
-        console.error('Error fetching movie details:', err)
-        setUiState(prev => ({ ...prev, error: err.message }))
+      if (!response.ok) {
+        throw new Error('Failed to load details...')
       }
-    },
-    [API_KEY, BASE_URL]
-  )
+
+      const data = await response.json()
+      setModal({ isOpen: true, selectedMovie: data })
+    } catch (err) {
+      console.error('Error fetching movie details:', err)
+    }
+  }, [])
 
   /**
    * Fetch available movie genres from TMDB API
@@ -228,7 +224,7 @@ function App() {
     } catch (err) {
       console.error('Failed to fetch genres:', err)
     }
-  }, [API_KEY, BASE_URL])
+  }, [])
 
   // Fetch genres on mount
   useEffect(() => {
