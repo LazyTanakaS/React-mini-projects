@@ -8,6 +8,7 @@ function SearchBar({
   onClearHistory,
   onSelectHistory,
   onClearSearch,
+  onSearchSubmit,
 }) {
   const [showHistory, setShowHistory] = useState(false)
 
@@ -32,7 +33,13 @@ function SearchBar({
   return (
     <header className="header">
       <h1>Movie Search</h1>
-      <form onSubmit={e => e.preventDefault()} className="search-form">
+      <form
+        onSubmit={e => {
+          e.preventDefault()
+          onSearchSubmit(searchQuery)
+        }}
+        className="search-form"
+      >
         <div className="search-input-wrapper">
           <input
             type="text"

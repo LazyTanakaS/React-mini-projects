@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
 const STORAGE_KEY = 'MovieSearchHistory'
-const MAX_HISTORY_SIZE = 8
+const MAX_HISTORY_SIZE = 5
 
 function useSearchHistory() {
   const [searchHistory, setSearchHistory] = useState(() => {

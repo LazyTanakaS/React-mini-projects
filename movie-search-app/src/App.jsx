@@ -4,7 +4,7 @@ import MovieCard from './components/MovieCard/MovieCard'
 import SearchBar from './components/SearchBar/SearchBar'
 import CategoryTabs from './components/CategoryTabs/CategoryTabs'
 import MovieModal from './components/MovieModal/MovieModal'
-import Filters from './components/Filtres/Filters'
+import Filters from './components/Filters/Filters'
 import useFavorites from './hooks/useFavorites'
 import useDebounce from './hooks/useDebounce'
 import useMovieData from './hooks/useMovieData'
@@ -16,7 +16,6 @@ const BASE_URL = 'https://api.themoviedb.org/3'
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 
 // Constants
-const SEARCH_HISTORY_MAX_SIZE = 5
 const MIN_SEARCH_QUERY_LENGTH = 3
 const SEARCH_DEBOUNCE_DELAY = 500 // ms
 const SCROLL_BUTTON_THRESHOLD = 300 // px
@@ -89,6 +88,7 @@ function App() {
   const debouncedQuery = useDebounce(searchQuery, SEARCH_DEBOUNCE_DELAY)
   const { favorites, addToFavorites, removeFromFavorites, isFavorite } =
     useFavorites()
+  const { searchHistory, addToHistory, clearHistory } = useSearchHistory()
 
   const searchUrl = debouncedQuery
     ? `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(
@@ -241,9 +241,13 @@ function App() {
     setSearchQuery(value)
   }, [])
 
+  const handleSearchSubmit = useCallback(() => {
+    addToHistory(searchQuery)
+  }, [addToHistory, searchQuery])
+
   const handleClearHistory = useCallback(() => {
     clearHistory()
-  }, [])
+  }, [clearHistory])
 
   const handleSelectHistory = useCallback(query => {
     setSearchQuery(query)
@@ -337,6 +341,7 @@ function App() {
         onClearHistory={handleClearHistory}
         onSelectHistory={handleSelectHistory}
         onClearSearch={handleClearSearch}
+        onSearchSubmit={handleSearchSubmit}
       />
 
       {searchQuery && searchQuery.length < MIN_SEARCH_QUERY_LENGTH && (
