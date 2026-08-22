@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-function useMovieData(baseUrl, page = 1) {
+function useMovieData(baseUrl, page = 1, parseResponse) {
   const [data, setData] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -9,7 +9,11 @@ function useMovieData(baseUrl, page = 1) {
   const prevBaseUrlRef = useRef(null)
 
   useEffect(() => {
-    if (!baseUrl) return
+    if (!baseUrl) {
+      prevBaseUrlRef.current = null
+
+      return
+    }
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
@@ -34,14 +38,15 @@ function useMovieData(baseUrl, page = 1) {
         }
 
         const result = await response.json()
+        const parsed = parseResponse(result)
 
         if (isNewQuery) {
-          setData(result.results || [])
+          setData(parsed.items || [])
         } else {
-          setData(prev => [...prev, ...(result.results || [])])
+          setData(prev => [...prev, ...(parsed.items || [])])
         }
 
-        setTotalPages(result.total_pages || 1)
+        setTotalPages(parsed.totalPages || 1)
       } catch (err) {
         if (err.name === 'AbortError') {
           return
@@ -58,7 +63,7 @@ function useMovieData(baseUrl, page = 1) {
     return () => {
       controller.abort()
     }
-  }, [baseUrl, page])
+  }, [baseUrl, page, parseResponse])
 
   return { data, totalPages, isLoading, error }
 }

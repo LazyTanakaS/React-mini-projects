@@ -62,11 +62,7 @@ function App() {
   const [category, setCategory] = useState('popular')
   const [filtersApplied, setFiltersApplied] = useState(false)
 
-  // Modal state (grouped)
-  const [modal, setModal] = useState({
-    isOpen: false,
-    selectedMovie: null,
-  })
+  const [selectedMovieId, setSelectedMovieId] = useState(null)
 
   // Pagination state (grouped)
   const [pagination, setPagination] = useState({
@@ -90,6 +86,24 @@ function App() {
     useFavorites()
   const { searchHistory, addToHistory, clearHistory } = useSearchHistory()
 
+  const parseMovieDetails = useCallback(result => {
+    return { items: result, totalPages: 1 }
+  }, [])
+
+  const parseListResponse = useCallback(result => {
+    return { items: result.results || [], totalPages: result.total_pages || 1 }
+  }, [])
+
+  const detailsUrl = selectedMovieId
+    ? `${BASE_URL}/movie/${selectedMovieId}?api_key=${API_KEY}`
+    : null
+
+  const {
+    data: movieDetails,
+    isLoading: isDetailsLoading,
+    error: detailsError,
+  } = useMovieData(detailsUrl, 1, parseMovieDetails)
+
   const searchUrl = debouncedQuery
     ? `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(
         debouncedQuery
@@ -108,13 +122,13 @@ function App() {
     totalPages: searchTotalPages,
     isLoading: isSearchLoading,
     error: searchError,
-  } = useMovieData(searchUrl, pagination.searchPage)
+  } = useMovieData(searchUrl, pagination.searchPage, parseListResponse)
   const {
     data: categoryResults,
     totalPages: categoryTotalPages,
     isLoading: isCategoryLoading,
     error: categoryError,
-  } = useMovieData(categoryUrl, pagination.categoryPage)
+  } = useMovieData(categoryUrl, pagination.categoryPage, parseListResponse)
 
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
@@ -188,25 +202,6 @@ function App() {
   }, [category])
 
   /**
-   * Fetch detailed information about a specific movie
-   */
-  const fetchMovieDetails = useCallback(async movieId => {
-    try {
-      const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
-      const response = await fetch(url)
-
-      if (!response.ok) {
-        throw new Error('Failed to load details...')
-      }
-
-      const data = await response.json()
-      setModal({ isOpen: true, selectedMovie: data })
-    } catch (err) {
-      console.error('Error fetching movie details:', err)
-    }
-  }, [])
-
-  /**
    * Fetch available movie genres from TMDB API
    */
   const fetchGenres = useCallback(async () => {
@@ -258,7 +253,7 @@ function App() {
   }, [])
 
   const handleCloseModal = useCallback(() => {
-    setModal(prev => ({ ...prev, isOpen: false }))
+    setSelectedMovieId(null)
   }, [])
 
   const handleGenresChange = useCallback(newGenres => {
@@ -310,12 +305,9 @@ function App() {
   }, [])
 
   // Movie card handlers
-  const handleMovieCardClick = useCallback(
-    movieId => {
-      fetchMovieDetails(movieId)
-    },
-    [fetchMovieDetails]
-  )
+  const handleMovieCardClick = useCallback(movieId => {
+    setSelectedMovieId(movieId)
+  }, [])
 
   const handleToggleFavorite = useCallback(
     (movie, isCurrentlyFavorite) => {
@@ -453,8 +445,8 @@ function App() {
       )}
 
       <MovieModal
-        isOpen={modal.isOpen}
-        movie={modal.selectedMovie}
+        isOpen={!!selectedMovieId}
+        movie={movieDetails}
         onClose={handleCloseModal}
         imageBaseUrl={IMAGE_BASE_URL}
       />
