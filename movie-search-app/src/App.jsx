@@ -49,8 +49,6 @@ function buildDiscoverUrl(filters) {
 function App() {
   // UI state (grouped)
   const [uiState, setUiState] = useState({
-    isLoading: false,
-    error: null,
     isTyping: false,
     showScrollButton: false,
   })
@@ -132,7 +130,7 @@ function App() {
 
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
-      setUiState(prev => ({ ...prev, error: null, isTyping: false }))
+      setUiState(prev => ({ ...prev, isTyping: false }))
       return
     }
 
