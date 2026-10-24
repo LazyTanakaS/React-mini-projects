@@ -159,7 +159,7 @@ npm run dev
 
 ## 👤 Author
 
-**Petro Komar**  
+**Petr Komar**  
 Junior Frontend Developer
 
 - GitHub: [@LazyTanakaS](https://github.com/LazyTanakaS)
