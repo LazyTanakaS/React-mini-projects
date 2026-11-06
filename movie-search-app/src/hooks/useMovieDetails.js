@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 
-function useMovieDetails(detailUrl, parseResponse) {
+function useMovieDetails(detailUrl) {
   return useQuery({
     queryKey: ['movie-details', detailUrl],
+    staleTime: 1000 * 60 * 1,
     queryFn: async ({ signal }) => {
       const response = await fetch(detailUrl, { signal })
 
@@ -11,9 +12,7 @@ function useMovieDetails(detailUrl, parseResponse) {
       }
 
       const result = await response.json()
-      const parsed = parseResponse(result)
-
-      return parsed
+      return result
     },
     enabled: Boolean(detailUrl),
   })
