@@ -177,6 +177,19 @@
   background: #f40612;
 }
 
+.error-message {
+  margin: 30px;
+  padding: 18px 22px;
+  color: #ff6b73;
+  background: rgba(229, 9, 20, 0.12);
+  border: 1px solid rgba(229, 9, 20, 0.45);
+  border-left: 4px solid var(--netflix-red);
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
   .modal-overlay {
     padding: 10px;
@@ -238,6 +251,12 @@
 
   .modal-tagline em {
     font-size: 16px;
+  }
+
+  .error-message {
+    margin: 20px;
+    padding: 14px 16px;
+    font-size: 14px;
   }
 }
 
