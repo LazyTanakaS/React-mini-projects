@@ -9,6 +9,7 @@ import useFavorites from './hooks/useFavorites'
 import useDebounce from './hooks/useDebounce'
 import useMovieData from './hooks/useMovieData'
 import useSearchHistory from './hooks/useSearchHistory'
+import useMovieDetails from './hooks/useMovieDetails'
 
 // API configuration
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY
@@ -84,10 +85,6 @@ function App() {
     useFavorites()
   const { searchHistory, addToHistory, clearHistory } = useSearchHistory()
 
-  const parseMovieDetails = useCallback(result => {
-    return { items: result, totalPages: 1 }
-  }, [])
-
   const parseListResponse = useCallback(result => {
     return { items: result.results || [], totalPages: result.total_pages || 1 }
   }, [])
@@ -100,7 +97,7 @@ function App() {
     data: movieDetails,
     isLoading: isDetailsLoading,
     error: detailsError,
-  } = useMovieData(detailsUrl, 1, parseMovieDetails)
+  } = useMovieDetails(detailsUrl)
 
   const searchUrl = debouncedQuery
     ? `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(
@@ -445,6 +442,8 @@ function App() {
       <MovieModal
         isOpen={!!selectedMovieId}
         movie={movieDetails}
+        isLoading={isDetailsLoading}
+        error={detailsError}
         onClose={handleCloseModal}
         imageBaseUrl={IMAGE_BASE_URL}
       />
