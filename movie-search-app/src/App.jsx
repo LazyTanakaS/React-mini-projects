@@ -10,6 +10,7 @@ import useDebounce from './hooks/useDebounce'
 import useMovieData from './hooks/useMovieData'
 import useSearchHistory from './hooks/useSearchHistory'
 import useMovieDetails from './hooks/useMovieDetails'
+import useMovieList from './hooks/useMovieList'
 
 // API configuration
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY
@@ -111,19 +112,24 @@ function App() {
       : filtersApplied
         ? buildDiscoverUrl(filters)
         : `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
-
-  const {
-    data: searchResults,
-    totalPages: searchTotalPages,
-    isLoading: isSearchLoading,
-    error: searchError,
-  } = useMovieData(searchUrl, pagination.searchPage, parseListResponse)
   const {
     data: categoryResults,
     totalPages: categoryTotalPages,
     isLoading: isCategoryLoading,
     error: categoryError,
   } = useMovieData(categoryUrl, pagination.categoryPage, parseListResponse)
+
+  const {
+    data: searchData,
+    fetchNextPage: fetchNextSearchPage,
+    hasNextPage: hasNextSearchPage,
+    isLoading: isSearchLoading,
+    isFetchingNextPage: isFetchingNext,
+    error: searchError,
+  } = useMovieList(searchUrl, parseListResponse)
+
+  const searchResults =
+    searchData?.pages.flatMap(page => page.items ?? []) ?? []
 
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
@@ -179,6 +185,8 @@ function App() {
     searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
       ? isSearchLoading
       : isCategoryLoading
+
+  const isButtonBusy = isLoading || isFetchingNext
 
   const error =
     searchQuery.length >= MIN_SEARCH_QUERY_LENGTH ? searchError : categoryError
@@ -411,21 +419,21 @@ function App() {
 
             {category !== 'favorites' &&
               (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
-                ? pagination.searchPage < searchTotalPages
+                ? hasNextSearchPage
                 : pagination.categoryPage < categoryTotalPages) && (
                 <div className="load-more-container">
                   <button
                     onClick={() => {
                       if (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
-                        handleLoadMoreSearch()
+                        fetchNextSearchPage()
                       } else {
                         handleLoadMoreCategory()
                       }
                     }}
                     className="load-more-button"
-                    disabled={isLoading}
+                    disabled={isButtonBusy}
                   >
-                    {isLoading ? 'Loading...' : 'Load More Movies'}
+                    {isButtonBusy ? 'Loading...' : 'Load More Movies'}
                   </button>
                 </div>
               )}
