@@ -7,7 +7,6 @@ import MovieModal from './components/MovieModal/MovieModal'
 import Filters from './components/Filters/Filters'
 import useFavorites from './hooks/useFavorites'
 import useDebounce from './hooks/useDebounce'
-import useMovieData from './hooks/useMovieData'
 import useSearchHistory from './hooks/useSearchHistory'
 import useMovieDetails from './hooks/useMovieDetails'
 import useMovieList from './hooks/useMovieList'
@@ -21,8 +20,6 @@ const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 const MIN_SEARCH_QUERY_LENGTH = 3
 const SEARCH_DEBOUNCE_DELAY = 500 // ms
 const SCROLL_BUTTON_THRESHOLD = 300 // px
-const INITIAL_PAGE = 1
-const DEFAULT_PAGE_COUNT = 1
 const EMPTY_RESULTS = 0
 const MIN_RATING_DEFAULT = 0
 
@@ -64,14 +61,6 @@ function App() {
 
   const [selectedMovieId, setSelectedMovieId] = useState(null)
 
-  // Pagination state (grouped)
-  const [pagination, setPagination] = useState({
-    searchPage: INITIAL_PAGE,
-    categoryPage: INITIAL_PAGE,
-    searchTotalPages: DEFAULT_PAGE_COUNT,
-    categoryTotalPages: DEFAULT_PAGE_COUNT,
-  })
-
   // Filter state (grouped)
   const [filters, setFilters] = useState({
     genres: [],
@@ -112,12 +101,18 @@ function App() {
       : filtersApplied
         ? buildDiscoverUrl(filters)
         : `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
+
   const {
-    data: categoryResults,
-    totalPages: categoryTotalPages,
+    data: categoryData,
+    fetchNextPage: fetchNextCategoryPage,
+    hasNextPage: hasNextCategoryPage,
     isLoading: isCategoryLoading,
+    isFetchingNextPage: isFetchingNextCategory,
     error: categoryError,
-  } = useMovieData(categoryUrl, pagination.categoryPage, parseListResponse)
+  } = useMovieList(categoryUrl, parseListResponse)
+
+  const categoryResults =
+    categoryData?.pages.flatMap(page => page.items ?? []) ?? []
 
   const {
     data: searchData,
@@ -145,7 +140,6 @@ function App() {
       return
     }
 
-    setPagination(prev => ({ ...prev, searchPage: INITIAL_PAGE }))
     setUiState(prev => ({ ...prev, isTyping: false }))
   }, [debouncedQuery])
 
@@ -186,7 +180,7 @@ function App() {
       ? isSearchLoading
       : isCategoryLoading
 
-  const isButtonBusy = isLoading || isFetchingNext
+  const isButtonBusy = isLoading || isFetchingNext || isFetchingNextCategory
 
   const error =
     searchQuery.length >= MIN_SEARCH_QUERY_LENGTH ? searchError : categoryError
@@ -201,7 +195,6 @@ function App() {
 
     setFilters(prev => ({ ...prev, selectedGenres: [] }))
     setFiltersApplied(false)
-    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
   }, [category])
 
   /**
@@ -276,7 +269,6 @@ function App() {
   }, [])
 
   const handleApplyFilters = useCallback(() => {
-    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
     setFiltersApplied(true)
   }, [])
 
@@ -289,22 +281,6 @@ function App() {
       minRating: MIN_RATING_DEFAULT,
     }))
     setFiltersApplied(false)
-    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
-  }, [])
-
-  // Load more handlers
-  const handleLoadMoreSearch = useCallback(() => {
-    setPagination(prev => ({
-      ...prev,
-      searchPage: prev.searchPage + 1,
-    }))
-  }, [])
-
-  const handleLoadMoreCategory = useCallback(() => {
-    setPagination(prev => ({
-      ...prev,
-      categoryPage: prev.categoryPage + 1,
-    }))
   }, [])
 
   // Movie card handlers
@@ -420,14 +396,14 @@ function App() {
             {category !== 'favorites' &&
               (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
                 ? hasNextSearchPage
-                : pagination.categoryPage < categoryTotalPages) && (
+                : hasNextCategoryPage) && (
                 <div className="load-more-container">
                   <button
                     onClick={() => {
                       if (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
                         fetchNextSearchPage()
                       } else {
-                        handleLoadMoreCategory()
+                        fetchNextCategoryPage()
                       }
                     }}
                     className="load-more-button"
