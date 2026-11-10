@@ -7,8 +7,9 @@ import MovieModal from './components/MovieModal/MovieModal'
 import Filters from './components/Filters/Filters'
 import useFavorites from './hooks/useFavorites'
 import useDebounce from './hooks/useDebounce'
-import useMovieData from './hooks/useMovieData'
 import useSearchHistory from './hooks/useSearchHistory'
+import useMovieDetails from './hooks/useMovieDetails'
+import useMovieList from './hooks/useMovieList'
 
 // API configuration
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY
@@ -19,8 +20,6 @@ const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 const MIN_SEARCH_QUERY_LENGTH = 3
 const SEARCH_DEBOUNCE_DELAY = 500 // ms
 const SCROLL_BUTTON_THRESHOLD = 300 // px
-const INITIAL_PAGE = 1
-const DEFAULT_PAGE_COUNT = 1
 const EMPTY_RESULTS = 0
 const MIN_RATING_DEFAULT = 0
 
@@ -62,14 +61,6 @@ function App() {
 
   const [selectedMovieId, setSelectedMovieId] = useState(null)
 
-  // Pagination state (grouped)
-  const [pagination, setPagination] = useState({
-    searchPage: INITIAL_PAGE,
-    categoryPage: INITIAL_PAGE,
-    searchTotalPages: DEFAULT_PAGE_COUNT,
-    categoryTotalPages: DEFAULT_PAGE_COUNT,
-  })
-
   // Filter state (grouped)
   const [filters, setFilters] = useState({
     genres: [],
@@ -84,10 +75,6 @@ function App() {
     useFavorites()
   const { searchHistory, addToHistory, clearHistory } = useSearchHistory()
 
-  const parseMovieDetails = useCallback(result => {
-    return { items: result, totalPages: 1 }
-  }, [])
-
   const parseListResponse = useCallback(result => {
     return { items: result.results || [], totalPages: result.total_pages || 1 }
   }, [])
@@ -100,7 +87,7 @@ function App() {
     data: movieDetails,
     isLoading: isDetailsLoading,
     error: detailsError,
-  } = useMovieData(detailsUrl, 1, parseMovieDetails)
+  } = useMovieDetails(detailsUrl)
 
   const searchUrl = debouncedQuery
     ? `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(
@@ -116,17 +103,28 @@ function App() {
         : `${BASE_URL}/movie/${category}?api_key=${API_KEY}`
 
   const {
-    data: searchResults,
-    totalPages: searchTotalPages,
-    isLoading: isSearchLoading,
-    error: searchError,
-  } = useMovieData(searchUrl, pagination.searchPage, parseListResponse)
-  const {
-    data: categoryResults,
-    totalPages: categoryTotalPages,
+    data: categoryData,
+    fetchNextPage: fetchNextCategoryPage,
+    hasNextPage: hasNextCategoryPage,
     isLoading: isCategoryLoading,
+    isFetchingNextPage: isFetchingNextCategory,
     error: categoryError,
-  } = useMovieData(categoryUrl, pagination.categoryPage, parseListResponse)
+  } = useMovieList(categoryUrl, parseListResponse)
+
+  const categoryResults =
+    categoryData?.pages.flatMap(page => page.items ?? []) ?? []
+
+  const {
+    data: searchData,
+    fetchNextPage: fetchNextSearchPage,
+    hasNextPage: hasNextSearchPage,
+    isLoading: isSearchLoading,
+    isFetchingNextPage: isFetchingNext,
+    error: searchError,
+  } = useMovieList(searchUrl, parseListResponse)
+
+  const searchResults =
+    searchData?.pages.flatMap(page => page.items ?? []) ?? []
 
   useEffect(() => {
     if (!searchQuery || searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
@@ -142,7 +140,6 @@ function App() {
       return
     }
 
-    setPagination(prev => ({ ...prev, searchPage: INITIAL_PAGE }))
     setUiState(prev => ({ ...prev, isTyping: false }))
   }, [debouncedQuery])
 
@@ -183,6 +180,8 @@ function App() {
       ? isSearchLoading
       : isCategoryLoading
 
+  const isButtonBusy = isLoading || isFetchingNext || isFetchingNextCategory
+
   const error =
     searchQuery.length >= MIN_SEARCH_QUERY_LENGTH ? searchError : categoryError
 
@@ -196,7 +195,6 @@ function App() {
 
     setFilters(prev => ({ ...prev, selectedGenres: [] }))
     setFiltersApplied(false)
-    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
   }, [category])
 
   /**
@@ -271,7 +269,6 @@ function App() {
   }, [])
 
   const handleApplyFilters = useCallback(() => {
-    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
     setFiltersApplied(true)
   }, [])
 
@@ -284,22 +281,6 @@ function App() {
       minRating: MIN_RATING_DEFAULT,
     }))
     setFiltersApplied(false)
-    setPagination(prev => ({ ...prev, categoryPage: INITIAL_PAGE }))
-  }, [])
-
-  // Load more handlers
-  const handleLoadMoreSearch = useCallback(() => {
-    setPagination(prev => ({
-      ...prev,
-      searchPage: prev.searchPage + 1,
-    }))
-  }, [])
-
-  const handleLoadMoreCategory = useCallback(() => {
-    setPagination(prev => ({
-      ...prev,
-      categoryPage: prev.categoryPage + 1,
-    }))
   }, [])
 
   // Movie card handlers
@@ -414,21 +395,21 @@ function App() {
 
             {category !== 'favorites' &&
               (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH
-                ? pagination.searchPage < searchTotalPages
-                : pagination.categoryPage < categoryTotalPages) && (
+                ? hasNextSearchPage
+                : hasNextCategoryPage) && (
                 <div className="load-more-container">
                   <button
                     onClick={() => {
                       if (searchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
-                        handleLoadMoreSearch()
+                        fetchNextSearchPage()
                       } else {
-                        handleLoadMoreCategory()
+                        fetchNextCategoryPage()
                       }
                     }}
                     className="load-more-button"
-                    disabled={isLoading}
+                    disabled={isButtonBusy}
                   >
-                    {isLoading ? 'Loading...' : 'Load More Movies'}
+                    {isButtonBusy ? 'Loading...' : 'Load More Movies'}
                   </button>
                 </div>
               )}
@@ -445,6 +426,8 @@ function App() {
       <MovieModal
         isOpen={!!selectedMovieId}
         movie={movieDetails}
+        isLoading={isDetailsLoading}
+        error={detailsError}
         onClose={handleCloseModal}
         imageBaseUrl={IMAGE_BASE_URL}
       />
