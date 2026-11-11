@@ -5,4 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/React-mini-projects/movie-search-app/',
+  test: {
+    environment: 'jsdom',
+    include: ['src/hooks/**/*.test.{js,ts,jsx,tsx}'],
+  },
 })
