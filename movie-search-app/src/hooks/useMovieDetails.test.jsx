@@ -1,0 +1,41 @@
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import useMovieDetails from './useMovieDetails'
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+  })
+
+  return ({ children }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  )
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('useMovieDetails', () => {
+  it('returns movie data when the request succeeds', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 1, title: 'Matrix' }),
+      })
+    )
+
+    const { result } = renderHook(
+      () =>
+        useMovieDetails('https://api.themoviedb.org/3/movie/1?api_key=test'),
+      {
+        wrapper: createWrapper(),
+      }
+    )
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual({ id: 1, title: 'Matrix' })
+  })
+})
