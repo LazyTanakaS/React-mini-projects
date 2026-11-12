@@ -42,7 +42,7 @@ const secondPage = {
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://api.themoviedb.org/**', route =>
-    route.fulfill({ json: { result: [], total_pages: 1, genres: [] } })
+    route.fulfill({ json: { results: [], total_pages: 1, genres: [] } })
   )
 
   await page.route(/api\.themoviedb\.org\/3\/search\/movie/, route => {
