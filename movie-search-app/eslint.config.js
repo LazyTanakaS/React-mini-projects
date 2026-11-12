@@ -27,7 +27,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['**/*.js'],
+    files: ['playwright.config.js', 'vite.config.js', 'eslint.config.js'],
     languageOptions: {
       globals: globals.node,
     },
