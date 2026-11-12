@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import useMovieDetails from './useMovieDetails'
@@ -51,5 +51,17 @@ describe('useMovieDetails', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.error.message).toBe('Failed to fetch')
+  })
+
+  it('does not fetch when detailUrl is null', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useMovieDetails(null), {
+      wrapper: createWrapper(),
+    })
+
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
