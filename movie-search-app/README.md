@@ -33,3 +33,10 @@ Create `.env` file:
 \`\`\`
 VITE_TMDB_API_KEY=your_api_key_here
 \`\`\`
+
+## Tests
+
+- Unit tests: `npm test` (Vitest)
+- E2E tests: `npx playwright test`
+
+TMDB API requests are mocked in tests, so they don't require a real API key or make live API calls.
