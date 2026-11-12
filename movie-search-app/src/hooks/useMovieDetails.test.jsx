@@ -29,7 +29,7 @@ describe('useMovieDetails', () => {
 
     const { result } = renderHook(
       () =>
-        useMovieDetails('https://api.themoviedb.org/3/movie/1?api_key=test'),
+        useMovieDetails(1, 'https://api.themoviedb.org/3/movie/1?api_key=test'),
       {
         wrapper: createWrapper(),
       }
@@ -43,7 +43,7 @@ describe('useMovieDetails', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
     const { result } = renderHook(
-      () => useMovieDetails('https://api.themoviedb.org'),
+      () => useMovieDetails(1, 'https://api.themoviedb.org'),
       {
         wrapper: createWrapper(),
       }
@@ -63,5 +63,33 @@ describe('useMovieDetails', () => {
 
     expect(result.current.fetchStatus).toBe('idle')
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('uses a separate cache entry for each movie id', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 1, title: 'Matrix' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 2, title: 'Inception' }),
+      })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result, rerender } = renderHook(
+      ({ id, url }) => useMovieDetails(id, url),
+      {
+        wrapper: createWrapper(),
+        initialProps: { id: 1, url: 'http://api.themoviedb.org/3/movie/1' },
+      }
+    )
+
+    await waitFor(() => expect(result.current.data?.title).toBe('Matrix'))
+    rerender({ id: 2, url: 'http://api.themoviedb.org/3/movie/2' })
+
+    await waitFor(() => expect(result.current.data?.title).toBe('Inception'))
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })

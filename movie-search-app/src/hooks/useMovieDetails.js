@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 
-function useMovieDetails(detailUrl) {
+function useMovieDetails(movieId, detailUrl) {
   return useQuery({
-    queryKey: ['movie-details', detailUrl],
+    queryKey: ['movie-details', movieId],
     staleTime: 1000 * 60 * 1,
     queryFn: async ({ signal }) => {
       const response = await fetch(detailUrl, { signal })
