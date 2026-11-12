@@ -87,7 +87,7 @@ function App() {
     data: movieDetails,
     isLoading: isDetailsLoading,
     error: detailsError,
-  } = useMovieDetails(detailsUrl)
+  } = useMovieDetails(selectedMovieId, detailsUrl)
 
   const searchUrl = debouncedQuery
     ? `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(
