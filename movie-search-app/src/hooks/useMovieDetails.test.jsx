@@ -38,4 +38,18 @@ describe('useMovieDetails', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual({ id: 1, title: 'Matrix' })
   })
+
+  it('returns an error when the request fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+    const { result } = renderHook(
+      () => useMovieDetails('https://api.themoviedb.org'),
+      {
+        wrapper: createWrapper(),
+      }
+    )
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.error.message).toBe('Failed to fetch')
+  })
 })
